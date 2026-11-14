@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulator Roket Air</title>
+<style>
+:root{
+  --display:"DIN Condensed","Bahnschrift","Roboto Condensed","Arial Narrow","Helvetica Neue",sans-serif;
+  --bg:#e8edf1; --panel:#ffffff; --ink:#15212b; --muted:#53636f; --line:#d0d9e0;
+  --red:#d3202b; --yellow:#f2c200; --green:#2b9a4e;
+  --water:rgba(40,140,225,.78); --pet:rgba(110,170,215,.30);
+  --sky1:#a6d3f1; --sky2:#e9f5fc; --ground:#9fb48d; --groundline:#5d7a4c;
+  --ok:#1b7a3a; --warn:#8a5200; --bad:#b3261e; --okbg:#e3f4e8; --warnbg:#fbefd5; --badbg:#fbe4e2;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg:#0d151b; --panel:#16212a; --ink:#e7eef3; --muted:#98a9b6; --line:#2a3a46;
+    --red:#d6343d; --yellow:#f5cd2e; --green:#47b96b;
+    --water:rgba(80,170,245,.78); --pet:rgba(160,205,240,.26);
+    --sky1:#0f2538; --sky2:#27506f; --ground:#2a3b2e; --groundline:#4c6b52;
+    --ok:#6fd08f; --warn:#f0b858; --bad:#ff8a82; --okbg:#173326; --warnbg:#3a2d14; --badbg:#3d1d1b;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.app{max-width:1200px;margin:0 auto;padding:10px 12px 40px}
+header.top{padding:6px 2px 10px}
+h1{font:700 32px/1 var(--display);margin:0 0 4px;letter-spacing:.2px}
+header.top p{margin:0;color:var(--muted);max-width:60ch}
+.grid{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.stagewrap{position:sticky;top:0;z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 6px 14px -8px rgba(0,0,0,.35)}
+#stage{display:block;width:100%;height:clamp(210px,36vh,300px)}
+.fire{position:absolute;top:10px;right:10px;background:var(--red);color:#fff;border:0;border-radius:8px;padding:10px 16px;font:700 16px system-ui,sans-serif;cursor:pointer;min-height:44px}
+.fire:hover{filter:brightness(1.08)}
+.fire:active{transform:translateY(1px)}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.below,.controls{min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.tools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.tools .grp{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;color:var(--ink);border:0;border-right:1px solid var(--line);padding:7px 11px;font:600 13px system-ui,sans-serif;cursor:pointer;min-height:36px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px;margin:0}
+.stats div{min-width:0}
+.stats dt{font-size:12px;color:var(--muted)}
+.stats dd{margin:0;font:700 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.stats .main dd{font-size:30px;color:var(--red)}
+.chip{display:inline-block;border-radius:999px;padding:3px 10px;font-weight:600;font-size:13px;margin-top:10px}
+.chip.ok{background:var(--okbg);color:var(--ok)}
+.chip.warn{background:var(--warnbg);color:var(--warn)}
+.chip.bad{background:var(--badbg);color:var(--bad)}
+.info{margin:8px 0 0;font-size:13px;color:var(--muted)}
+ul.warns{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+ul.warns li{padding:8px 10px;border-radius:8px;font-size:13px;background:var(--warnbg);color:var(--warn)}
+ul.warns li.bad{background:var(--badbg);color:var(--bad)}
+details.sec{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:12px}
+details.sec>summary{cursor:pointer;padding:13px 14px;font:700 20px/1 var(--display);list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:"+";font:600 20px system-ui;color:var(--muted)}
+details.sec[open]>summary::after{content:"–"}
+details.sec .body{padding:0 14px 14px}
+h3{font:700 16px var(--display);margin:14px 0 6px;color:var(--muted)}
+.ctl{margin:10px 0}
+.ctl .lab{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px}
+.ctl .num{display:inline-flex;align-items:center;gap:4px}
+.ctl .num em{font-style:normal;color:var(--muted);font-size:13px;min-width:22px}
+.ctl input[type=number],select{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 6px;font:600 14px system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.ctl input[type=number]{width:76px;text-align:right}
+.ctl input[type=range]{width:100%;margin:6px 0 0;accent-color:var(--red);min-height:28px}
+select{width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chips button{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:600 13px system-ui,sans-serif;cursor:pointer;min-height:36px}
+.chips button[aria-pressed="true"]{background:var(--yellow);border-color:var(--yellow);color:#15212b}
+.locks{display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 0;font-size:14px}
+.locks label{display:inline-flex;align-items:center;gap:6px;min-height:32px}
+.btn{background:var(--ink);color:var(--panel);border:0;border-radius:8px;padding:11px 16px;font:700 15px system-ui,sans-serif;cursor:pointer;min-height:44px;width:100%}
+.btn:disabled{opacity:.55;cursor:wait}
+.msg{margin:10px 0 0;font-size:14px}
+.msg.ok{color:var(--ok)} .msg.warn{color:var(--warn)}
+#design{display:block;width:100%;height:210px;border-radius:8px;border:1px solid var(--line)}
+.legend{font-size:12px;color:var(--muted);margin:6px 0 0}
+.note{font-size:13px;color:var(--muted)}
+.note li{margin:4px 0}
+.tabs{display:flex;gap:4px;margin:2px 0 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{flex:1;background:transparent;color:var(--muted);border:0;border-radius:9px;padding:10px 8px;font:700 17px/1 var(--display);cursor:pointer;min-height:44px}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--panel)}
+.panel{display:none}.panel.active{display:block}
+.dleft{position:sticky;top:0;z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 6px 14px -8px rgba(0,0,0,.35)}
+.dleft .sum{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:8px}
+.dleft .sum strong{font:700 20px var(--display)}
+.dleft .chip{margin-top:0}
+#design{height:190px}
+.saved{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.saved li{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:6px}
+.saved .nm{font:700 18px var(--display)}
+.saved .meta{font-size:13px;color:var(--muted)}
+.saved .row{display:flex;gap:8px}
+.mini{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:600 13px system-ui,sans-serif;cursor:pointer;min-height:40px}
+.mini.danger{color:var(--bad)}
+.field{display:grid;gap:4px;margin:10px 0;font-size:14px}
+.field input,.field textarea{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;font:14px system-ui,sans-serif;width:100%}
+pre.code{max-height:220px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre}
+ol.note{padding-left:20px}
+fieldset.dest{border:1px solid var(--line);border-radius:8px;margin:10px 0;padding:6px 10px;display:grid;gap:2px;font-size:14px}
+fieldset.dest legend{padding:0 4px;color:var(--muted);font-size:13px}
+fieldset.dest label{display:flex;align-items:center;gap:8px;min-height:34px}
+.badge{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted);margin-left:6px}
+code{font:12px ui-monospace,Consolas,monospace}
+.cols2{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media (max-width:959px){
+  .tabs{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:50;margin:0;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .app{padding-bottom:84px}
+}
+@media (min-width:960px){
+  .app{padding:16px 20px 50px}
+  .grid{grid-template-columns:minmax(0,1.3fr) minmax(340px,.9fr);align-items:start}
+  #tab-sim .stagewrap{grid-column:1;grid-row:1;top:12px}
+  #stage{height:420px}
+  #tab-sim .below{grid-column:1;grid-row:2}
+  #tab-sim .controls{grid-column:2;grid-row:1 / span 2}
+  #tab-design .dleft{grid-column:1;grid-row:1;top:12px}
+  #tab-design .controls{grid-column:2;grid-row:1}
+  #design{height:260px}
+  .cols2{grid-template-columns:1fr 1fr;align-items:start}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>Simulator Roket Air</h1>
+    <p>Dua botol Coca-Cola 1,5 L: satu botol penuh sebagai tabung tekan berisi air, satu botol dipotong setengah sebagai nosecone dengan pemberat plastisin.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Bagian simulator">
+    <button type="button" role="tab" data-tab="sim" aria-selected="true">Simulasi</button>
+    <button type="button" role="tab" data-tab="design" aria-selected="false">Desain</button>
+    <button type="button" role="tab" data-tab="save" aria-selected="false">Library</button>
+    <button type="button" role="tab" data-tab="more" aria-selected="false">Lanjutan</button>
+  </nav>
+
+  <section class="panel active" id="tab-sim" role="tabpanel">
+    <div class="grid">
+      <div class="stagewrap" id="stageWrap">
+        <canvas id="stage" role="img" aria-label="Animasi lintasan roket air"></canvas>
+        <button class="fire" id="launch" type="button">Luncurkan</button>
+      </div>
+
+      <div class="below">
+        <div class="card">
+          <div class="tools">
+            <div class="grp">Kecepatan animasi
+              <div class="seg" id="segSpeed">
+                <button type="button" data-v="0.25" aria-pressed="false">0,25×</button>
+                <button type="button" data-v="0.5" aria-pressed="false">0,5×</button>
+                <button type="button" data-v="1" aria-pressed="true">1×</button>
+                <button type="button" data-v="2" aria-pressed="false">2×</button>
+              </div>
+            </div>
+            <label class="grp"><input type="checkbox" id="slow" checked> Slow-motion saat air menyembur</label>
+          </div>
+        </div>
+
+        <section class="card" aria-live="polite">
+          <dl class="stats">
+            <div class="main"><dt>Jarak</dt><dd id="rRange">–</dd></div>
+            <div><dt>Tinggi maks</dt><dd id="rApex">–</dd></div>
+            <div><dt>Waktu terbang</dt><dd id="rTime">–</dd></div>
+            <div><dt>Kecepatan maks</dt><dd id="rV">–</dd></div>
+            <div><dt>Percepatan maks</dt><dd id="rG">–</dd></div>
+            <div><dt>Lama dorongan</dt><dd id="rBurn">–</dd></div>
+          </dl>
+          <span class="chip ok" id="stabChip">–</span>
+          <p class="info" id="info"></p>
+          <ul class="warns" id="warns"></ul>
+        </section>
+      </div>
+
+      <div class="controls">
+        <details class="sec" open>
+          <summary>Peluncuran</summary>
+          <div class="body">
+            <div class="slot" data-k="angle"></div>
+            <div class="slot" data-k="water"></div>
+            <div class="slot" data-k="press"></div>
+          </div>
+        </details>
+
+        <details class="sec" open>
+          <summary>Atur otomatis dari target jarak</summary>
+          <div class="body">
+            <div class="slot" data-k="target"></div>
+            <div class="locks">
+              <label><input type="checkbox" id="lkA"> Kunci sudut</label>
+              <label><input type="checkbox" id="lkW"> Kunci air</label>
+              <label><input type="checkbox" id="lkP"> Kunci tekanan</label>
+            </div>
+            <button class="btn" id="autoBtn" type="button">Cari setelan dan luncurkan</button>
+            <p class="msg" id="autoMsg" aria-live="polite"></p>
+            <p class="note">Tanpa kunci, program mencari tekanan paling rendah yang mencapai target, dengan sudut dan air di sekitar nilai efisien. Tekanan otomatis dibatasi 100 psi.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="tab-design" role="tabpanel">
+    <div class="grid">
+      <div class="dleft">
+        <canvas id="design" role="img" aria-label="Pratinjau desain roket"></canvas>
+        <div class="sum"><strong class="sumRange"></strong><span class="chip ok sumChip">–</span></div>
+      </div>
+      <div class="controls">
+        <details class="sec" open>
+          <summary>Nosecone dan pemberat</summary>
+          <div class="body">
+            <div class="slot" data-k="Ln"></div>
+            <div class="slot" data-k="mBal"></div>
+            <div class="slot" data-k="balPos"></div>
+            <p class="legend">Titik merah: CP (pusat tekanan). Lingkaran hitam-putih: CG saat berisi air. Lingkaran kosong: CG setelah air habis. CG harus di depan CP.</p>
+          </div>
+        </details>
+        <details class="sec" open>
+          <summary>Sirip</summary>
+          <div class="body">
+            <div class="chips" id="segN" role="group" aria-label="Jumlah sirip"></div>
+            <div class="chips" id="presets" role="group" aria-label="Bentuk sirip"></div>
+            <div class="slot" data-k="Cr"></div>
+            <div class="slot" data-k="Ct"></div>
+            <div class="slot" data-k="span"></div>
+            <div class="slot" data-k="sweep"></div>
+            <div class="slot" data-k="finOff"></div>
+            <div class="ctl"><div class="lab"><label for="mat">Bahan sirip</label></div><select id="mat"></select></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="tab-save" role="tabpanel">
+    <div class="cols2">
+      <div>
+        <details class="sec" open>
+          <summary>Simpan desain saya</summary>
+          <div class="body">
+            <label class="field">Nama desain<input id="svName" type="text" maxlength="60" placeholder="Contoh: Nose 15 cm, fin swept"></label>
+            <label class="field">Catatan (opsional)<textarea id="svNote" rows="2" maxlength="200"></textarea></label>
+            <button class="btn" id="svBtn" type="button">Simpan desain</button>
+            <p class="msg" id="svMsg" aria-live="polite"></p>
+            <p class="note">Desain saya tersimpan di browser ini dan hanya bisa dilihat, dimuat, dan dihapus oleh Anda. Yang disimpan: semua parameter desain dan peluncuran, plus jarak prediksi, tinggi maksimum, dan margin stabilitas saat disimpan.</p>
+          </div>
+        </details>
+        <details class="sec">
+          <summary>Pindahkan dan bagikan</summary>
+          <div class="body">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="mini" id="exJson" type="button">Ekspor desain saya (.json)</button>
+              <button class="mini" id="imJson" type="button">Impor file (.json)</button>
+              <button class="mini" id="exLib" type="button">Ekspor sebagai library (designs.js)</button>
+            </div>
+            <input type="file" id="jsonFile" accept=".json,application/json" hidden>
+            <p class="msg" id="ioMsg" aria-live="polite"></p>
+            <p class="note">Ekspor dan impor .json untuk memindahkan desain antar perangkat. Ekspor sebagai library menghasilkan file <code>library/designs.js</code> baru (library bawaan ditambah desain Anda). Ganti file itu di repo lalu commit supaya desain muncul untuk semua pengunjung.</p>
+          </div>
+        </details>
+      </div>
+      <div>
+        <details class="sec" open>
+          <summary>Library (file database)</summary>
+          <div class="body">
+            <p class="note">Desain bersama dari file <code>library/designs.js</code>. Hanya bisa dimuat atau disalin ke desain saya.</p>
+            <p class="msg" id="ldMsg" aria-live="polite"></p>
+            <ul class="saved" id="libList"></ul>
+          </div>
+        </details>
+        <details class="sec" open>
+          <summary>Desain saya</summary>
+          <div class="body">
+            <ul class="saved" id="mineList"></ul>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="tab-more" role="tabpanel">
+    <div class="cols2">
+      <details class="sec" open>
+        <summary>Parameter lanjutan</summary>
+        <div class="body">
+          <div class="slot" data-k="dn"></div>
+          <div class="slot" data-k="rail"></div>
+          <div class="slot" data-k="h0"></div>
+          <div class="slot" data-k="kD"></div>
+          <p class="note">Kalibrasi drag mengalikan koefisien drag hasil hitungan. Setelah uji lapangan, ubah sampai jarak simulasi cocok dengan jarak nyata.</p>
+        </div>
+      </details>
+      <details class="sec" open>
+        <summary>Asumsi model dan keselamatan</summary>
+        <div class="body">
+          <ul class="note">
+            <li>Botol 1,5 L: diameter 8,6 cm, panjang 31 cm, massa 42 g. Nosecone dimodelkan sebagai kerucut melengkung dari leher botol ke diameter penuh.</li>
+            <li>Udara mengembang adiabatik (γ = 1,4). Air keluar menurut Bernoulli (Cd nozzle 0,95). Sisa udara menyembur sebagai aliran tersedak atau subsonik.</li>
+            <li>Stabilitas memakai metode Barrowman (CP) dan dinamika rotasi 2D, jadi roket yang tidak stabil akan berputar dan jaraknya jatuh. Tanpa angin, tanpa parasut.</li>
+            <li>Hasil adalah perkiraan. Kalibrasi drag dengan data uji lapangan.</li>
+            <li>Tekanan 100 psi atau lebih berisiko memecahkan botol PET. Uji hidrostatik dulu, pakai pelindung mata, luncurkan dengan tali pelepas dari jauh, dan jangan mendekati roket yang sedang diberi tekanan.</li>
+          </ul>
+        </div>
+      </details>
+      <details class="sec">
+        <summary>Menambah desain ke library</summary>
+        <div class="body">
+          <ol class="note">
+            <li>Simpan desain di tab Library, lalu klik Ekspor sebagai library (designs.js).</li>
+            <li>Ganti file <code>library/designs.js</code> di repo GitHub dengan file hasil ekspor, lalu commit.</li>
+            <li>Setelah GitHub Pages memperbarui halaman, desain muncul di Library untuk semua pengunjung.</li>
+          </ol>
+          <p class="note">Anda juga bisa menyunting <code>library/designs.js</code> langsung: setiap desain adalah satu objek di dalam array <code>window.RA_LIBRARY</code>.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+</div>
+
+<script src="library/designs.js"></script>
+<script id="phys">
+const Phys=(()=>{
+'use strict';
+const C={g:9.81,rhoW:1000,rhoA:1.2,Patm:101325,R:287,gam:1.4,T0:300,Vb:1.5e-3,D:0.086,Lc:0.31,Ls:0.07,Lneck:0.02,dNeck:0.028,Cdn:0.95,mBottle:0.042,mJoint:0.008,mNosePerM:0.14,mCap:0.003};
+const MATS=[
+ {id:'karton',name:'Karton tebal (1,5 mm)',t:0.0015,rho:700},
+ {id:'plastik',name:'Plastik PP/PVC (2 mm)',t:0.002,rho:950},
+ {id:'akrilik',name:'Akrilik (3 mm)',t:0.003,rho:1180},
+ {id:'impra',name:'Impraboard (3 mm)',t:0.003,rho:150},
+ {id:'foam',name:'Foam board (5 mm)',t:0.005,rho:150}
+];
+function buildRocket(s){
+  const D=C.D,Rr=D/2,A=Math.PI*D*D/4;
+  const Ln=s.Ln/100,Lt=Ln+C.Lc;
+  const mat=MATS.find(m=>m.id===s.mat)||MATS[1];
+  const Cr=s.Cr/100,Ct=s.Ct/100,sp=s.span/100,Xs=s.sweep/100,off=s.finOff/100,N=s.N;
+  const rTip=C.dNeck/2,xT0=Lt-C.Lneck-C.Ls,xT1=Lt-C.Lneck;
+  const rAt=x=>{
+    if(x<=0)return rTip;
+    if(x<=Ln){const u=x/Ln;return rTip+(Rr-rTip)*(2*u-u*u);}
+    if(x<=xT0)return Rr;
+    if(x<=xT1){const u=(x-xT0)/(xT1-xT0),e=u*u*(3-2*u);return Rr+(rTip-Rr)*e;}
+    return rTip;
+  };
+  const Sf=(Cr+Ct)/2*sp,mFin=Sf*mat.t*mat.rho;
+  const xLE=Lt-off-Cr;
+  const cgFin=(Xs*(Cr+2*Ct)+(Cr*Cr+Cr*Ct+Ct*Ct))/(3*(Cr+Ct));
+  const rMid=rAt(xLE+Cr/2);
+  // dry mass components [m, x, L]
+  const comps=[
+    [C.mNosePerM*Ln+C.mCap,0.55*Ln,Ln],
+    [s.mBal/1000,(s.balPos/100)*Ln,0],
+    [C.mJoint,Ln,0.02],
+    [C.mBottle,Ln+C.Lc*0.5,C.Lc],
+    [N*mFin,xLE+cgFin,Cr]
+  ];
+  let m0=0,S1=0,S2=0;
+  for(const [m,x,L] of comps){m0+=m;S1+=m*x;S2+=m*(x*x+L*L/12);}
+  // Barrowman
+  const Neff=N<=1?1:N===2?1:N<=4?N:4+(N-4)*0.6;
+  const Lm=Math.hypot(sp,Xs+(Ct-Cr)/2);
+  const Kf=1+rMid/(sp+rMid);
+  const CNf=Kf*4*Neff*Math.pow(sp/D,2)/(1+Math.sqrt(1+Math.pow(2*Lm/(Cr+Ct),2)));
+  const xf=xLE+Xs*(Cr+2*Ct)/(3*(Cr+Ct))+(1/6)*((Cr+Ct)-Cr*Ct/(Cr+Ct));
+  const r=C.dNeck/D;
+  const CNn=2*(1-r*r),xn=Ln/3*(1+1/(1+r));
+  const CNt=-CNn,xt=xT0+C.Ls/3*(1+r/(1+r));
+  const ae=[[CNn,xn],[CNt,xt],[CNf,xf]];
+  let Sa0=0,Sa1=0,Sb0=0,Sb1=0,Sb2=0;
+  for(const [cn,x] of ae){Sa0+=cn;Sa1+=cn*x;const a=Math.abs(cn);Sb0+=a;Sb1+=a*x;Sb2+=a*x*x;}
+  // drag
+  const cdBase=0.18,cdNose=0.45*Math.exp(-0.9*Ln/D)+0.05;
+  const cdFric=0.008*(Math.PI*D*Lt*0.8)/A;
+  const cdFinF=0.0065*2*N*Sf/A;
+  const cdFinLE=0.5*N*mat.t*sp/A;
+  const cd0=(cdBase+cdNose+cdFric+cdFinF+cdFinLE)*s.kD;
+  const cd90=1.2*Lt*D/A;
+  return {Ln,Ltot:Lt,D,A,Rr,rAt,rMid,N,span:sp,Cr,Ct,Xs,xLE,Sf,mFin,m0,S1,S2,Sa0,Sa1,Sb0,Sb1,Sb2,
+    xcp:Sa0>0.01?Sa1/Sa0:Lt,cd0,cd90,dn:s.dn/1000,rail:s.rail/100,h0:s.h0,
+    mBal:s.mBal/1000,balPos:s.balPos/100,rTip};
+}
+function cgAt(R,Vw){const mw=C.rhoW*Vw,M=R.m0+mw,hw=Vw/C.Vb*C.Lc,xw=R.Ltot-hw/2;return (R.S1+mw*xw)/M;}
+function margin(R,waterMl){
+  const Vw=Math.min(Math.max(waterMl,0)*1e-6,C.Vb*0.96);
+  return R.Sa0>0.2?(R.Sa1/R.Sa0-cgAt(R,Vw))/C.D:-9;
+}
+function simulate(R,angDeg,waterMl,pBar,rec){
+  const th0=angDeg*Math.PI/180,c0=Math.cos(th0),s0=Math.sin(th0);
+  let Vw=Math.min(Math.max(waterMl,0)*1e-6,C.Vb*0.96);if(Vw<1e-9)Vw=0;
+  const Va0=C.Vb-Vw,P0=C.Patm+pBar*1e5;
+  const An=Math.PI*R.dn*R.dn/4;
+  const ma0=P0*Va0/(C.R*C.T0);
+  const Pend=P0*Math.pow(Va0/C.Vb,C.gam);
+  let ma=ma0,phase=Vw>0?0:1;
+  if(phase===1&&Pend<=C.Patm*1.002)phase=2;
+  const mw0=C.rhoW*Vw,M0=R.m0+mw0,hw0=Vw/C.Vb*C.Lc,xw0=R.Ltot-hw0/2;
+  const xcg0=(R.S1+mw0*xw0)/M0,dcg=R.Ltot-xcg0;
+  let x=dcg*c0,y=R.h0+dcg*s0,vx=0,vy=0,th=th0,om=0,t=0;
+  let onRail=R.rail>0.002,v=0,s=0;
+  let tBurn=0,vmax=0,ymax=y,gmax=0,vRail=0,maxAl=0,lastRec=-1e9,steps=0;
+  let minX=x,maxX=x,landed=false,noLift=false,xland=x,tland=0,waterLeft=0;
+  let TT,XX,YY,TH,PH,VE,VX,VY,WF;
+  if(rec){TT=[];XX=[];YY=[];TH=[];PH=[];VE=[];VX=[];VY=[];WF=[];}
+  const push=(ve,ph)=>{TT.push(t);XX.push(x);YY.push(y);TH.push(th);PH.push(ph);VE.push(ve);VX.push(vx);VY.push(vy);WF.push(Vw/C.Vb);};
+  while(t<40&&steps++<400000){
+    const mw=C.rhoW*Vw,M=R.m0+mw,hw=Vw/C.Vb*C.Lc,xw=R.Ltot-hw/2;
+    const xcg=(R.S1+mw*xw)/M;
+    let T=0,mdot=0,ve=0;
+    if(phase===0){
+      const P=P0*Math.pow(Va0/(C.Vb-Vw),C.gam),dP=P-C.Patm;
+      if(dP>0){ve=Math.sqrt(2*dP/C.rhoW);mdot=C.rhoW*C.Cdn*An*ve;T=mdot*ve;}else{phase=2;waterLeft=Vw;}
+    }else if(phase===1){
+      const Pa=Pend*Math.pow(ma/ma0,C.gam);
+      if(Pa<=C.Patm*1.002||ma<=0)phase=2;
+      else{
+        const Ta=Pa*C.Vb/(ma*C.R),pr=Pa/C.Patm;
+        if(pr>1.8929){
+          const Te=Ta*2/(C.gam+1),Pe=Pa*0.5283,vv=Math.sqrt(C.gam*C.R*Te),rhoe=Pe/(C.R*Te);
+          mdot=C.Cdn*An*rhoe*vv;ve=vv;T=mdot*vv+(Pe-C.Patm)*An;
+        }else{
+          const Te=Ta*Math.pow(1/pr,(C.gam-1)/C.gam);
+          ve=Math.sqrt(2*C.gam/(C.gam-1)*C.R*(Ta-Te));
+          const rhoe=C.Patm/(C.R*Te);mdot=C.Cdn*An*rhoe*ve;T=mdot*ve;
+        }
+      }
+    }
+    let dt=T>0?0.0004:0.002;
+    if(phase===0&&mdot>0){const dV=mdot*dt/C.rhoW;if(dV>=Vw)dt=Vw*C.rhoW/mdot;}
+    if(phase===1&&mdot>0){if(mdot*dt>=ma)dt=ma/mdot;}
+    if(T>0){tBurn=t+dt;const g_=T/M/C.g;if(g_>gmax)gmax=g_;}
+    if(rec&&t-lastRec>=(T>0?0.0008:0.008)-1e-9){push(ve,phase);lastRec=t;}
+    const xp=x,yp=y;
+    if(onRail){
+      const q=0.5*C.rhoA*v*v,Dr=q*R.A*R.cd0;
+      const a=(T-Dr)/M-C.g*s0;
+      v=Math.max(0,v+a*dt);
+      s+=v*dt;vx=v*c0;vy=v*s0;x+=vx*dt;y+=vy*dt;
+      if(s>=R.rail){onRail=false;vRail=v;}
+    }else{
+      const V=Math.hypot(vx,vy);
+      let Fx=0,Fy=-M*C.g,mom=0;
+      if(V>0.3){
+        const gm=Math.atan2(vy,vx);
+        const al=Math.atan2(Math.sin(th-gm),Math.cos(th-gm));
+        if(V>2){const aa=Math.abs(al);if(aa>maxAl)maxAl=aa;}
+        const q=0.5*C.rhoA*V*V,sa=Math.sin(al);
+        const cd=R.cd0+(R.cd90-R.cd0)*sa*sa;
+        const Dr=q*R.A*cd,Nn=q*R.A*R.Sa0*sa;
+        Fx+=-Dr*vx/V-Nn*Math.sin(th);
+        Fy+=-Dr*vy/V+Nn*Math.cos(th);
+        mom=-q*R.A*sa*(R.Sa1-xcg*R.Sa0);
+        const sd=R.Sb2-2*xcg*R.Sb1+xcg*xcg*R.Sb0;
+        mom+=-0.5*C.rhoA*V*R.A*sd*om;
+      }
+      Fx+=T*Math.cos(th);Fy+=T*Math.sin(th);
+      const I=Math.max(1e-4,R.S2+mw*(xw*xw+hw*hw/12)-M*xcg*xcg);
+      vx+=Fx/M*dt;vy+=Fy/M*dt;om+=mom/I*dt;th+=om*dt;x+=vx*dt;y+=vy*dt;
+    }
+    const sp=Math.hypot(vx,vy);if(sp>vmax)vmax=sp;
+    if(y>ymax)ymax=y;if(x<minX)minX=x;if(x>maxX)maxX=x;
+    if(phase===0&&mdot>0){Vw-=mdot*dt/C.rhoW;if(Vw<=1e-12){Vw=0;phase=(Pend>C.Patm*1.002)?1:2;}}
+    else if(phase===1&&mdot>0){ma-=mdot*dt;}
+    t+=dt;
+    if(onRail&&phase===2&&v<0.05){noLift=true;break;}
+    if(!onRail&&y<=0&&t>0.01){
+      const f=yp/(yp-y);xland=xp+(x-xp)*f;tland=t-dt+dt*f;landed=true;x=xland;y=0;t=tland;break;
+    }
+  }
+  if(!landed){xland=x;tland=t;}
+  if(rec){vx=0;vy=0;push(0,2);}
+  return {range:noLift?0:xland,apogee:ymax,tFlight:tland,vmax,gmax,tBurn,vRail,
+    tumbled:maxAl>1.75,noLift,waterLeft,dcg,minX,maxX,maxY:ymax,
+    T:TT,X:XX,Y:YY,TH:TH,PH:PH,VE:VE,VX:VX,VY:VY,WF:WF,tEnd:rec?TT[TT.length-1]:tland};
+}
+function linspace(a,b,n){const r=[];for(let i=0;i<n;i++)r.push(a+(b-a)*i/(n-1));return r;}
+function solve(R,target,cur,lock,lim){
+  const f=v=>simulate(R,v.a,v.w,v.p,false).range;
+  const free=['p','a','w'].filter(k=>!lock[k]);
+  const costf=v=>v.p+0.012*Math.abs(v.a-45)+0.0006*Math.abs(v.w-450);
+  let evals=0;
+  const ev=v=>{evals++;return f(v);};
+  if(!free.length){const r=ev(cur);return {ok:Math.abs(r-target)<0.5,vals:{...cur},range:r,evals};}
+  const inn=free.includes('p')?'p':free.includes('a')?'a':'w';
+  const outer=free.filter(k=>k!==inn);
+  const inner=(k,v)=>{
+    const lo=lim[k+'Min'],hi=lim[k+'Max'],roots=[];
+    const g=x=>{const vv={...v};vv[k]=x;return ev(vv)-target;};
+    if(k==='p'){
+      const glo=g(lo),ghi=g(hi);if(glo>0||ghi<0)return roots;
+      let a=lo,b=hi;for(let i=0;i<14;i++){const m=(a+b)/2;if(g(m)>0)b=m;else a=m;}
+      roots.push((a+b)/2);return roots;
+    }
+    const n=20;let xp=lo,gp=g(lo);
+    for(let i=1;i<=n;i++){
+      const x=lo+(hi-lo)*i/n,gx=g(x);
+      if(gp*gx<=0&&!(gp===0&&gx===0)){
+        let a=xp,b=x,ga=gp;
+        for(let j=0;j<14;j++){const m=(a+b)/2,gm=g(m);if(ga*gm<=0)b=m;else{a=m;ga=gm;}}
+        roots.push((a+b)/2);
+      }
+      xp=x;gp=gx;
+    }
+    return roots;
+  };
+  let best=null;
+  const ranges={};outer.forEach(k=>ranges[k]=[lim[k+'Min'],lim[k+'Max']]);
+  let nG=9;
+  for(let round=0;round<3;round++){
+    const lists=outer.map(k=>linspace(ranges[k][0],ranges[k][1],nG));
+    let combos=[{}];
+    outer.forEach((k,i)=>{const nc=[];for(const c of combos)for(const val of lists[i])nc.push({...c,[k]:val});combos=nc;});
+    for(const c of combos){
+      const v={...cur,...c};
+      for(const r of inner(inn,v)){const v2={...v,[inn]:r},cs=costf(v2);if(!best||cs<best.cost)best={cost:cs,v:v2};}
+    }
+    if(!best||!outer.length)break;
+    outer.forEach(k=>{
+      const st=(ranges[k][1]-ranges[k][0])/(nG-1);
+      ranges[k]=[Math.max(lim[k+'Min'],best.v[k]-st),Math.min(lim[k+'Max'],best.v[k]+st)];
+    });
+    nG=7;
+  }
+  if(!best){
+    let bR=-1,bv=null;
+    const la=free.includes('a')?linspace(lim.aMin,lim.aMax,12):[cur.a];
+    const lw=free.includes('w')?linspace(lim.wMin,lim.wMax,12):[cur.w];
+    const pv=free.includes('p')?lim.pMax:cur.p;
+    for(const a of la)for(const w of lw){const r=ev({a,w,p:pv});if(r>bR){bR=r;bv={a,w,p:pv};}}
+    return {ok:false,vals:bv,range:bR,evals};
+  }
+  return {ok:true,vals:best.v,evals};
+}
+return {C,MATS,buildRocket,cgAt,margin,simulate,solve};
+})();
+</script>
+
+<script id="ui">
+(()=>{
+'use strict';
+const $=(s,e=document)=>e.querySelector(s);
+const {C,MATS,buildRocket,simulate,margin,solve}=Phys;
+const fmt=(v,d=1)=>Number(v).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+const S={angle:45,water:500,press:70,Ln:15,mBal:100,balPos:12,N:4,Cr:12,Ct:5,span:12,sweep:7,finOff:8,mat:'karton',
+  dn:22,rail:30,h0:0.5,kD:1,target:30,speed:1,slow:true};
+const CFG={
+  angle:{label:'Sudut elevasi',min:10,max:90,step:0.1,unit:'°',dec:1},
+  water:{label:'Volume air',min:50,max:1300,step:1,unit:'ml',dec:0},
+  press:{label:'Tekanan (gauge)',min:15,max:115,step:0.1,unit:'psi',dec:1},
+  target:{label:'Target jarak',min:5,max:120,step:0.5,unit:'m',dec:1},
+  Ln:{label:'Panjang nosecone',min:5,max:30,step:0.5,unit:'cm',dec:1},
+  mBal:{label:'Berat plastisin',min:0,max:400,step:1,unit:'g',dec:0},
+  balPos:{label:'Posisi plastisin dari ujung nose',min:0,max:100,step:1,unit:'%',dec:0},
+  Cr:{label:'Panjang pangkal sirip (root)',min:2,max:25,step:0.5,unit:'cm',dec:1},
+  Ct:{label:'Panjang ujung sirip (tip)',min:0,max:25,step:0.5,unit:'cm',dec:1},
+  span:{label:'Tinggi sirip (span)',min:2,max:20,step:0.5,unit:'cm',dec:1},
+  sweep:{label:'Geser ujung sirip ke belakang (sweep)',min:-5,max:25,step:0.5,unit:'cm',dec:1},
+  finOff:{label:'Jarak sirip dari ujung belakang',min:0,max:12,step:0.5,unit:'cm',dec:1},
+  dn:{label:'Diameter nozzle',min:8,max:22,step:0.5,unit:'mm',dec:1},
+  rail:{label:'Panjang pemandu peluncur',min:0,max:100,step:1,unit:'cm',dec:0},
+  h0:{label:'Tinggi peluncur',min:0,max:3,step:0.1,unit:'m',dec:1},
+  kD:{label:'Kalibrasi drag',min:0.6,max:1.8,step:0.01,unit:'×',dec:2}
+};
+const PRESETS={
+  persegi:{label:'Persegi panjang',Cr:8,Ct:8,span:7,sweep:0},
+  trapesium:{label:'Trapesium',Cr:11,Ct:5,span:8,sweep:3},
+  segitiga:{label:'Segitiga',Cr:10,Ct:0,span:9,sweep:0},
+  swept:{label:'Swept-back',Cr:12,Ct:5,span:12,sweep:7},
+  delta:{label:'Delta',Cr:14,Ct:0,span:9,sweep:12}
+};
+const PSI=14.5038;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const roundStep=(v,st)=>Math.round(v/st)*st;
+
+// ---------- controls
+const refs={};
+function setVal(k,v){
+  const c=CFG[k];v=clamp(roundStep(v,c.step),c.min,c.max);S[k]=v;
+  refs[k].r.value=v;refs[k].n.value=v.toFixed(c.dec);return v;
+}
+document.querySelectorAll('.slot').forEach(el=>{
+  const k=el.dataset.k,c=CFG[k];
+  el.className='ctl';
+  el.innerHTML=`<div class="lab"><label for="n_${k}">${c.label}</label><span class="num"><input id="n_${k}" type="number" inputmode="decimal" min="${c.min}" max="${c.max}" step="${c.step}"><em>${c.unit}</em></span></div><input id="r_${k}" type="range" min="${c.min}" max="${c.max}" step="${c.step}" aria-label="${c.label}">`;
+  const r=el.querySelector('input[type=range]'),n=el.querySelector('input[type=number]');
+  refs[k]={r,n};
+  r.addEventListener('input',()=>{S[k]=parseFloat(r.value);n.value=S[k].toFixed(c.dec);changed(k);});
+  n.addEventListener('input',()=>{const v=parseFloat(n.value);if(!isFinite(v))return;S[k]=clamp(v,c.min,c.max);r.value=S[k];changed(k);});
+  n.addEventListener('change',()=>{setVal(k,isFinite(parseFloat(n.value))?parseFloat(n.value):S[k]);changed(k);});
+  setVal(k,S[k]);
+});
+const finKeys=['Cr','Ct','span','sweep'];
+function changed(k){if(finKeys.includes(k))syncPresets();schedule();}
+
+// fin count
+const segN=$('#segN');
+[2,3,4,5,6,8].forEach(n=>{
+  const b=document.createElement('button');b.type='button';b.textContent=n+' sirip';b.dataset.n=n;
+  b.addEventListener('click',()=>{S.N=n;syncN();schedule();});segN.appendChild(b);
+});
+function syncN(){[...segN.children].forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.n===S.N)));}
+// presets
+const presetBox=$('#presets');
+Object.entries(PRESETS).forEach(([id,p])=>{
+  const b=document.createElement('button');b.type='button';b.textContent=p.label;b.dataset.id=id;
+  b.addEventListener('click',()=>{finKeys.forEach(k=>setVal(k,p[k]));syncPresets();schedule();});
+  presetBox.appendChild(b);
+});
+function syncPresets(){
+  [...presetBox.children].forEach(b=>{
+    const p=PRESETS[b.dataset.id];
+    b.setAttribute('aria-pressed',String(finKeys.every(k=>Math.abs(S[k]-p[k])<1e-6)));
+  });
+}
+// material
+const matSel=$('#mat');
+MATS.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name;matSel.appendChild(o);});
+matSel.value=S.mat;matSel.addEventListener('change',()=>{S.mat=matSel.value;schedule();});
+// speed / slow
+const segSpeed=$('#segSpeed');
+segSpeed.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;S.speed=parseFloat(b.dataset.v);
+  [...segSpeed.children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+});
+$('#slow').addEventListener('change',e=>{S.slow=e.target.checked;});
+
+// ---------- canvas helpers
+const stageCv=$('#stage'),sctx=stageCv.getContext('2d');
+const dCv=$('#design'),dctx=dCv.getContext('2d');
+const col={};
+function refreshColors(){
+  const cs=getComputedStyle(document.documentElement);
+  ['--sky1','--sky2','--ground','--groundline','--ink','--muted','--line','--red','--yellow','--green','--water','--pet','--display','--panel']
+    .forEach(k=>col[k]=cs.getPropertyValue(k).trim());
+}
+function sizeCanvas(cv){
+  const dpr=Math.min(window.devicePixelRatio||1,2.5),r=cv.getBoundingClientRect();
+  const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+  return {w:r.width,h:r.height,dpr};
+}
+function niceStep(scale,minPx){
+  for(const s of [0.5,1,2,5,10,20,50,100,200,500,1000])if(s*scale>=minPx)return s;
+  return 1000;
+}
+
+// ---------- rocket drawing
+function drawRocket(c,R,o){
+  const ca=Math.cos(o.ang),sa=Math.sin(o.ang),ppm=o.ppm,xr=o.xref;
+  const P=(x,r)=>{const u=(xr-x)*ppm,v=r*ppm;return [o.ox+u*ca-v*sa,o.oy-(u*sa+v*ca)];};
+  const Lt=R.Ltot,N=70;
+  const body=()=>{
+    c.beginPath();
+    for(let i=0;i<=N;i++){const x=Lt*i/N,p=P(x,R.rAt(x));i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]);}
+    for(let i=N;i>=0;i--){const x=Lt*i/N,p=P(x,-R.rAt(x));c.lineTo(p[0],p[1]);}
+    c.closePath();
+  };
+  const band=(x0,x1,r)=>{
+    c.beginPath();let p=P(x0,-r);c.moveTo(p[0],p[1]);
+    p=P(x0,r);c.lineTo(p[0],p[1]);p=P(x1,r);c.lineTo(p[0],p[1]);p=P(x1,-r);c.lineTo(p[0],p[1]);c.closePath();
+  };
+  const lw=Math.max(1,Math.min(1.6,ppm*0.004));
+  // fins behind body translucency: draw body first
+  body();c.fillStyle=col['--pet'];c.fill();
+  c.save();body();c.clip();
+  if(o.waterFrac>0){band(Lt-o.waterFrac*C.Lc,Lt,1);c.fillStyle=col['--water'];c.fill();}
+  if(R.mBal>0){
+    const V=R.mBal/1600,xc=R.balPos*R.Ln,rl=Math.max(0.012,R.rAt(clamp(xc,0.01,R.Ln)));
+    const Lb=Math.min(R.Ln*0.95,V/(Math.PI*rl*rl));
+    const x0=clamp(xc-Lb/2,0,Math.max(0,R.Ln-Lb));
+    band(x0,x0+Lb,1);c.fillStyle='#c8333b';c.fill();
+  }
+  c.restore();
+  band(0,0.018,R.rTip+0.002);c.fillStyle=col['--green'];c.fill();
+  body();c.strokeStyle=col['--ink'];c.lineWidth=lw;c.stroke();
+  // joint tape
+  {const a=P(R.Ln,-R.Rr),b=P(R.Ln,R.Rr);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.globalAlpha=.55;c.stroke();c.globalAlpha=1;}
+  // fins
+  const fins=[];
+  for(let k=0;k<R.N;k++){const f=Math.cos(2*Math.PI*k/R.N);if(Math.abs(f)>0.15)fins.push(f);}
+  fins.sort((a,b)=>Math.abs(a)-Math.abs(b));
+  for(const f of fins){
+    const sg=f>=0?1:-1,h=Math.abs(f),tr=R.rMid+R.span*h;
+    const pts=[P(R.xLE,sg*R.rAt(R.xLE)),P(R.xLE+R.Xs,sg*tr),P(R.xLE+R.Xs+R.Ct,sg*tr),P(R.xLE+R.Cr,sg*R.rAt(R.xLE+R.Cr))];
+    c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();
+    c.globalAlpha=h>0.99?0.95:0.75;c.fillStyle=col['--yellow'];c.fill();c.globalAlpha=1;
+    c.strokeStyle=col['--ink'];c.lineWidth=lw*0.8;c.stroke();
+  }
+}
+
+// ---------- state
+let R=null,pred=null,anim={on:false,finished:false,t:0,fi:0,last:0},parts=[];
+function recompute(){
+  R=buildRocket(S);
+  pred=simulate(R,S.angle,S.water,S.press/PSI,true);
+  updateReadouts();drawAll();
+}
+let pending=false;
+function schedule(){stopAnim();if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;recompute();});}
+function stopAnim(){anim={on:false,finished:false,t:0,fi:0,last:0};parts=[];}
+
+function updateReadouts(){
+  const p=pred;
+  $('#rRange').textContent=fmt(p.range,1)+' m';
+  $('#rApex').textContent=fmt(Math.max(0,p.apogee),1)+' m';
+  $('#rTime').textContent=fmt(p.tFlight,2)+' s';
+  $('#rV').textContent=fmt(p.vmax,1)+' m/s';
+  $('#rG').textContent=fmt(p.gmax,0)+' g';
+  $('#rBurn').textContent=fmt(p.tBurn*1000,0)+' ms';
+  const mL=margin(R,S.water),mB=margin(R,0);
+  const chip=$('#stabChip');let cls,txt;
+  if(p.noLift){cls='bad';txt='Tidak lepas dari rel';}
+  else if(p.tumbled){cls='bad';txt='Tidak stabil: roket berputar';}
+  else if(mL<0){cls='warn';txt='Tidak stabil di awal ('+fmt(mL,1)+' cal)';}
+  else if(mL<1){cls='warn';txt='Cukup stabil ('+fmt(mL,1)+' cal)';}
+  else{cls='ok';txt='Stabil ('+fmt(mL,1)+' cal)';}
+  chip.className='chip '+cls;chip.textContent=txt;
+  document.querySelectorAll('.sumChip').forEach(e=>{e.className='chip '+cls+' sumChip';e.textContent=txt;});
+  document.querySelectorAll('.sumRange').forEach(e=>{e.textContent='Jarak prediksi '+fmt(p.range,1)+' m';});
+  $('#info').textContent=`Massa awal ${fmt((R.m0+C.rhoW*Math.min(S.water*1e-6,C.Vb*.96))*1000,0)} g, massa kosong ${fmt(R.m0*1000,0)} g, panjang ${fmt(R.Ltot*100,0)} cm, Cd ${fmt(R.cd0,2)}. Margin stabilitas ${fmt(mL,1)} cal saat meluncur, ${fmt(mB,1)} cal setelah air habis.`;
+  const w=[];
+  if(S.press>=100)w.push(['Tekanan 100 psi atau lebih: botol PET bisa pecah. Uji hidrostatik dulu, pakai pelindung mata, dan luncurkan dari jauh.','bad']);
+  if(p.noLift)w.push(['Roket tidak lepas dari rel. Naikkan tekanan atau air, atau kurangi plastisin.','bad']);
+  if(p.tumbled&&!p.noLift)w.push(['Roket jungkir balik. Perbesar sirip, geser sirip ke belakang, atau tambah plastisin supaya CG lebih depan dari CP.','bad']);
+  if(p.waterLeft>2e-5)w.push(['Air terlalu banyak: tekanan habis sebelum semua air keluar. Kurangi air.','warn']);
+  if(S.N===2)w.push(['Dua sirip hanya menstabilkan satu bidang. Hasil di sini konservatif, tapi di lapangan roket bisa goyang.','warn']);
+  if(S.sweep+S.Ct>S.Cr+8)w.push(['Ujung sirip menjulur jauh di belakang pangkalnya. Pastikan siripnya cukup kaku.','warn']);
+  const ul=$('#warns');ul.innerHTML='';
+  w.forEach(([t,k])=>{const li=document.createElement('li');li.textContent=t;if(k==='bad')li.className='bad';ul.appendChild(li);});
+}
+
+// ---------- stage
+function drawStage(dts){
+  const {w,h,dpr}=sizeCanvas(stageCv);if(w<20||!pred)return;
+  const c=sctx;c.setTransform(dpr,0,0,dpr,0,0);
+  const d=pred;
+  const gy=h-24,top=64,L=28,Rm=24;
+  const minX=Math.min(0,d.minX),maxX=Math.max(d.maxX,3),maxY=Math.max(d.maxY,1.5);
+  const scale=Math.min((w-L-Rm)/((maxX-minX)*1.03+0.8),(gy-top)/(maxY*1.1+0.4));
+  const ox=L-minX*scale,sx=x=>ox+x*scale,sy=y=>gy-y*scale;
+  // sky + ground
+  const g=c.createLinearGradient(0,0,0,gy);g.addColorStop(0,col['--sky1']);g.addColorStop(1,col['--sky2']);
+  c.fillStyle=g;c.fillRect(0,0,w,h);
+  c.fillStyle=col['--ground'];c.fillRect(0,gy,w,h-gy);
+  c.strokeStyle=col['--groundline'];c.lineWidth=2;c.beginPath();c.moveTo(0,gy);c.lineTo(w,gy);c.stroke();
+  // grid
+  const st=niceStep(scale,52);
+  c.font='11px system-ui,sans-serif';c.fillStyle=col['--muted'];c.strokeStyle=col['--ink'];c.lineWidth=1;
+  c.globalAlpha=.16;
+  for(let xv=Math.ceil(minX/st)*st;sx(xv)<w;xv+=st){c.beginPath();c.moveTo(sx(xv),gy);c.lineTo(sx(xv),top-10);c.stroke();}
+  for(let yv=st;sy(yv)>top-10;yv+=st){c.beginPath();c.moveTo(0,sy(yv));c.lineTo(w,sy(yv));c.stroke();}
+  c.globalAlpha=1;
+  c.textAlign='center';
+  for(let xv=Math.ceil(minX/st)*st;sx(xv)<w-8;xv+=st)c.fillText(fmt(xv,st<1?1:0)+' m',sx(xv),gy+15);
+  c.textAlign='left';
+  for(let yv=st;sy(yv)>top;yv+=st)c.fillText(fmt(yv,st<1?1:0)+' m',4,sy(yv)-3);
+
+  const live=anim.on||anim.finished;
+  // pose
+  let px,py,pth,pph=2,pve=0,pvx=0,pvy=0,pwf=S.water*1e-6/C.Vb;
+  if(live&&d.T.length>1){
+    const i=anim.fi,t0=d.T[i],t1=d.T[i+1],a=t1>t0?clamp((anim.t-t0)/(t1-t0),0,1):1,L_=(u,v)=>u+(v-u)*a;
+    px=L_(d.X[i],d.X[i+1]);py=L_(d.Y[i],d.Y[i+1]);pth=L_(d.TH[i],d.TH[i+1]);
+    pph=d.PH[i];pve=d.VE[i];pvx=d.VX[i];pvy=d.VY[i];pwf=L_(d.WF[i],d.WF[i+1]);
+  }else{px=d.X[0];py=d.Y[0];pth=d.TH[0];}
+  // predicted path
+  c.lineWidth=2;
+  c.strokeStyle=col['--ink'];c.globalAlpha=live?.28:.6;c.setLineDash([5,5]);
+  c.beginPath();for(let i=0;i<d.X.length;i++){const X=sx(d.X[i]),Y=sy(d.Y[i]);i?c.lineTo(X,Y):c.moveTo(X,Y);}c.stroke();
+  c.setLineDash([]);c.globalAlpha=1;
+  if(live){
+    c.strokeStyle=col['--red'];c.lineWidth=2.5;c.beginPath();
+    for(let i=0;i<=anim.fi&&i<d.X.length;i++){const X=sx(d.X[i]),Y=sy(d.Y[i]);i?c.lineTo(X,Y):c.moveTo(X,Y);}
+    c.lineTo(sx(px),sy(py));c.stroke();
+  }
+  // apex marker
+  {let ai=0;for(let i=1;i<d.Y.length;i++)if(d.Y[i]>d.Y[ai])ai=i;
+   if(d.apogee>0.5&&(!live||anim.finished||anim.t>=d.T[ai])){
+    c.fillStyle=col['--ink'];c.beginPath();c.arc(sx(d.X[ai]),sy(d.Y[ai]),3.5,0,7);c.fill();
+    c.textAlign='center';c.font='600 12px system-ui,sans-serif';c.fillText(fmt(d.apogee,1)+' m',sx(d.X[ai]),sy(d.Y[ai])-9);
+   }}
+  // launcher
+  {const th0=d.TH[0],X0=sx(0),Y0=sy(R.h0);
+   c.strokeStyle=col['--ink'];c.lineWidth=3;
+   c.beginPath();c.moveTo(X0-12,gy);c.lineTo(X0,Y0);c.lineTo(X0+12,gy);c.stroke();
+   const rl=Math.max(26,R.rail*scale);c.lineWidth=4;c.globalAlpha=.7;
+   c.beginPath();c.moveTo(X0,Y0);c.lineTo(X0+rl*Math.cos(th0),Y0-rl*Math.sin(th0));c.stroke();c.globalAlpha=1;}
+  // landing flag
+  {const fx=sx(d.range),fa=anim.finished?1:.65;c.globalAlpha=fa;
+   c.strokeStyle=col['--ink'];c.lineWidth=2;c.beginPath();c.moveTo(fx,gy);c.lineTo(fx,gy-26);c.stroke();
+   c.fillStyle=col['--red'];c.beginPath();c.moveTo(fx,gy-26);c.lineTo(fx+14,gy-20);c.lineTo(fx,gy-14);c.closePath();c.fill();
+   c.fillStyle=col['--ink'];c.font='700 13px system-ui,sans-serif';c.textAlign=fx>w-50?'right':'center';
+   c.fillText(fmt(d.range,1)+' m',fx,gy-31);c.globalAlpha=1;}
+  // particles
+  if(dts>0&&live&&pph<2&&pve>0){
+    const nf=dts*(pph===0?3500:1200),n=Math.min(40,Math.floor(nf)+(Math.random()<nf-Math.floor(nf)?1:0));
+    const tx=sx(px-d.dcg*Math.cos(pth)),ty=sy(py-d.dcg*Math.sin(pth));
+    for(let i=0;i<n;i++){
+      const sp=pve*scale*(0.5+0.5*Math.random()),ang=Math.PI+(-pth)+(Math.random()-.5)*0.25;
+      parts.push({x:tx,y:ty,vx:pvx*scale+Math.cos(ang)*sp,vy:-pvy*scale+Math.sin(ang)*sp,life:pph===0?0.5:0.25,max:pph===0?0.5:0.25,air:pph===1});
+    }
+  }
+  if(dts>0){
+    for(const p of parts){p.life-=dts;p.x+=p.vx*dts;p.y+=p.vy*dts;p.vy+=9.81*scale*dts*(p.air?0.1:1);const k=Math.exp(-2.5*dts);p.vx*=k;p.vy*=k;}
+    parts=parts.filter(p=>p.life>0);
+  }
+  for(const p of parts){
+    const a=Math.max(0,p.life/p.max);
+    c.globalAlpha=a*(p.air?.6:.9);c.fillStyle=p.air?'#ffffff':col['--water'];
+    c.beginPath();c.arc(p.x,p.y,p.air?(1+3*(1-a)):2,0,7);c.fill();
+  }
+  c.globalAlpha=1;
+  // rocket icon at tail
+  {const iconPx=clamp(w*0.085,40,60),tx=px-d.dcg*Math.cos(pth),ty=py-d.dcg*Math.sin(pth);
+   drawRocket(c,R,{ox:sx(tx),oy:sy(ty),ang:pth,ppm:iconPx/R.Ltot,xref:R.Ltot,waterFrac:pwf});}
+  // HUD
+  c.textAlign='left';
+  const label=anim.finished?'Jarak mendarat':anim.on?'Jarak sekarang':'Jarak prediksi';
+  const val=anim.finished?d.range:anim.on?Math.max(0,px):d.range;
+  c.fillStyle=col['--ink'];c.font='500 12px system-ui,sans-serif';c.fillText(label,12,20);
+  c.font='700 36px '+col['--display'];c.fillText(fmt(val,1)+' m',12,54);
+}
+
+// ---------- design preview
+function drawDesign(){
+  const {w,h,dpr}=sizeCanvas(dCv);if(w<20||!R)return;
+  const c=dctx;c.setTransform(dpr,0,0,dpr,0,0);
+  const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,col['--sky1']);g.addColorStop(1,col['--sky2']);
+  c.fillStyle=g;c.fillRect(0,0,w,h);
+  const maxr=Math.max(R.Rr,R.rMid+R.span);
+  const ppm=Math.min((w-30-100)/R.Ltot,(h/2-40)/maxr,900);
+  const ox=16,oy=h/2-6;
+  drawRocket(c,R,{ox,oy,ang:0,ppm,xref:R.Ltot,waterFrac:S.water*1e-6/C.Vb});
+  const X=x=>ox+(R.Ltot-x)*ppm;
+  // CG dry, CG wet, CP
+  const cgW=Phys.cgAt(R,Math.min(S.water*1e-6,C.Vb*.96)),cgD=Phys.cgAt(R,0);
+  c.font='600 11px system-ui,sans-serif';c.textAlign='center';
+  c.strokeStyle=col['--ink'];c.lineWidth=1.5;
+  c.beginPath();c.arc(X(cgD),oy,4.5,0,7);c.fillStyle=col['--panel'];c.fill();c.stroke();
+  const wx=X(cgW);
+  c.beginPath();c.arc(wx,oy,7,0,7);c.fillStyle='#fff';c.fill();c.stroke();
+  c.fillStyle='#15212b';
+  c.beginPath();c.moveTo(wx,oy);c.arc(wx,oy,7,-Math.PI/2,0);c.closePath();c.fill();
+  c.beginPath();c.moveTo(wx,oy);c.arc(wx,oy,7,Math.PI/2,Math.PI);c.closePath();c.fill();
+  const cpx=X(R.xcp);
+  c.beginPath();c.arc(cpx,oy,5.5,0,7);c.fillStyle=col['--red'];c.fill();c.strokeStyle='#fff';c.stroke();
+  c.fillStyle=col['--ink'];c.fillText('CP',cpx,oy-14);c.fillText('CG',wx,oy+24);
+  // dimensions
+  const y1=oy+maxr*ppm+14,y2=y1+14;
+  const dim=(xa,xb,y,txt)=>{
+    c.strokeStyle=col['--ink'];c.lineWidth=1;c.beginPath();c.moveTo(xa,y);c.lineTo(xb,y);
+    c.moveTo(xa,y-4);c.lineTo(xa,y+4);c.moveTo(xb,y-4);c.lineTo(xb,y+4);c.stroke();
+    c.fillStyle=col['--ink'];c.font='11px system-ui,sans-serif';c.textAlign='center';
+    const tw=c.measureText(txt).width+8;c.save();c.fillStyle=col['--sky2'];c.fillRect((xa+xb)/2-tw/2,y-7,tw,14);c.restore();
+    c.fillStyle=col['--ink'];c.fillText(txt,(xa+xb)/2,y+4);
+  };
+  dim(X(0),X(R.Ln),y1,`nose ${fmt(R.Ln*100,1)} cm`);
+  dim(X(R.Ltot),X(0),y2,`total ${fmt(R.Ltot*100,0)} cm`);
+  // end view
+  const cx=w-52,cy=52,tipR=R.rMid+R.span,sc=38/Math.max(tipR,R.Rr);
+  c.strokeStyle=col['--ink'];c.lineWidth=1;c.setLineDash([3,3]);c.beginPath();c.arc(cx,cy,R.Rr*sc,0,7);c.stroke();c.setLineDash([]);
+  c.beginPath();c.arc(cx,cy,R.rMid*sc,0,7);c.stroke();
+  for(let k=0;k<R.N;k++){
+    const a=-Math.PI/2+2*Math.PI*k/R.N,ca=Math.cos(a),sa=Math.sin(a),nx=-sa,ny=ca;
+    const r0=R.rMid*sc,r1=tipR*sc,wd=2.5;
+    c.beginPath();c.moveTo(cx+ca*r0+nx*wd,cy+sa*r0+ny*wd);c.lineTo(cx+ca*r1+nx*wd,cy+sa*r1+ny*wd);
+    c.lineTo(cx+ca*r1-nx*wd,cy+sa*r1-ny*wd);c.lineTo(cx+ca*r0-nx*wd,cy+sa*r0-ny*wd);c.closePath();
+    c.fillStyle=col['--yellow'];c.fill();c.stroke();
+  }
+  c.fillStyle=col['--ink'];c.font='11px system-ui,sans-serif';c.textAlign='center';c.fillText('tampak belakang',cx,cy+50);
+}
+function drawAll(){drawStage(0);drawDesign();}
+
+// ---------- animation
+function loop(now){
+  if(!anim.on)return;
+  const d=pred,dtr=Math.min(0.05,(now-anim.last)/1000);anim.last=now;
+  const rate=S.speed*((S.slow&&anim.t<d.tBurn+0.002)?0.05:1),dts=dtr*rate;
+  anim.t+=dts;
+  if(anim.t>=d.tEnd){anim.t=d.tEnd;anim.fi=d.T.length-2;anim.on=false;anim.finished=true;}
+  while(anim.fi<d.T.length-2&&d.T[anim.fi+1]<=anim.t)anim.fi++;
+  drawStage(dts);
+  if(anim.on)requestAnimationFrame(loop);else{parts=[];drawStage(0);}
+}
+function startAnim(){
+  if(!pred)return;
+  anim={on:true,finished:false,t:0,fi:0,last:performance.now()};parts=[];
+  requestAnimationFrame(loop);
+}
+$('#launch').addEventListener('click',startAnim);
+
+// ---------- auto target
+$('#autoBtn').addEventListener('click',()=>{
+  const msg=$('#autoMsg'),btn=$('#autoBtn');
+  msg.className='msg';msg.textContent='Menghitung kombinasi…';btn.disabled=true;
+  setTimeout(()=>{
+    try{
+      const lock={a:$('#lkA').checked,w:$('#lkW').checked,p:$('#lkP').checked};
+      const R0=buildRocket(S);
+      const res=solve(R0,S.target,{a:S.angle,w:S.water,p:S.press/PSI},lock,{aMin:10,aMax:85,wMin:50,wMax:1300,pMin:1,pMax:7});
+      const v=res.vals;
+      setVal('angle',v.a);setVal('water',v.w);setVal('press',v.p*PSI);
+      stopAnim();recompute();
+      const txt=`sudut ${fmt(S.angle,1)}°, air ${fmt(S.water,0)} ml, tekanan ${fmt(S.press,1)} psi`;
+      if(res.ok&&Math.abs(pred.range-S.target)<=0.6){
+        msg.className='msg ok';msg.textContent=`Setelan: ${txt}. Hasil simulasi ${fmt(pred.range,1)} m (target ${fmt(S.target,1)} m).`;
+      }else if(res.ok){
+        msg.className='msg warn';msg.textContent=`Setelan: ${txt} menghasilkan ${fmt(pred.range,1)} m, selisih dari target ${fmt(S.target,1)} m. Coba lagi atau ubah kunci.`;
+      }else{
+        msg.className='msg warn';msg.textContent=`Target ${fmt(S.target,1)} m tidak tercapai dengan batas yang ada. Jarak terjauh yang ditemukan ${fmt(pred.range,1)} m (${txt}); setelan itu sudah dipasang.`;
+      }
+      startAnim();
+    }finally{btn.disabled=false;}
+  },30);
+});
+
+// ---------- library (file) dan desain saya (browser)
+const FIELDS=['id','nama','catatan','dibuat','angle','water','press_psi','Ln','mBal','balPos','N','Cr','Ct','span','sweep','finOff','mat','dn','rail','h0','kD','jarak','tinggi','margin'];
+const TEXTF=['id','nama','catatan','dibuat','mat'];
+const LS={get(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}};
+const num=v=>parseFloat(String(v).replace(',','.'));
+function clean(o){
+  const r={};
+  for(const f of FIELDS){
+    let v=o[f];if(v==null)continue;
+    if(TEXTF.includes(f))r[f]=String(v).slice(0,f==='catatan'?200:60);
+    else{const n=num(v);if(isFinite(n))r[f]=n;}
+  }
+  return r;
+}
+const valid=r=>r&&isFinite(num(r.angle))&&isFinite(num(r.water))&&isFinite(num(r.Ln));
+const LIB=(Array.isArray(window.RA_LIBRARY)?window.RA_LIBRARY:[]).map(clean).filter(valid);
+let mine=LS.get('ra_mine',[]);if(!Array.isArray(mine))mine=[];mine=mine.map(clean).filter(valid);
+const newId=()=>'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const setMsg=(id,t,k)=>{const e=$(id);e.textContent=t;e.className='msg'+(k?' '+k:'');};
+const persist=()=>LS.set('ra_mine',mine);
+function rowFromState(name,note){
+  return {id:newId(),nama:name,catatan:note,dibuat:new Date().toISOString(),
+    angle:S.angle,water:S.water,press_psi:S.press,Ln:S.Ln,mBal:S.mBal,balPos:S.balPos,N:S.N,Cr:S.Cr,Ct:S.Ct,span:S.span,sweep:S.sweep,
+    finOff:S.finOff,mat:S.mat,dn:S.dn,rail:S.rail,h0:S.h0,kD:S.kD,
+    jarak:+pred.range.toFixed(2),tinggi:+pred.apogee.toFixed(2),margin:+margin(R,S.water).toFixed(2)};
+}
+function applyRow(r){
+  const map={angle:'angle',water:'water',press_psi:'press',Ln:'Ln',mBal:'mBal',balPos:'balPos',Cr:'Cr',Ct:'Ct',span:'span',sweep:'sweep',finOff:'finOff',dn:'dn',rail:'rail',h0:'h0',kD:'kD'};
+  for(const [f,k] of Object.entries(map)){const v=num(r[f]);if(isFinite(v))setVal(k,v);}
+  const n=parseInt(r.N,10);if([2,3,4,5,6,8].includes(n))S.N=n;
+  if(MATS.some(m=>m.id===r.mat)){S.mat=r.mat;matSel.value=r.mat;}
+  syncN();syncPresets();stopAnim();recompute();
+}
+function fillList(ul,items,kind){
+  ul.innerHTML='';
+  if(!items.length){const li=document.createElement('li');li.className='meta';li.textContent=kind==='lib'?'Library masih kosong.':'Belum ada desain tersimpan.';ul.appendChild(li);return;}
+  const list=[...items].sort((a,b)=>String(b.dibuat||'').localeCompare(String(a.dibuat||'')));
+  for(const r of list){
+    const li=document.createElement('li');
+    const nm=document.createElement('div');nm.className='nm';nm.textContent=r.nama||'(tanpa nama)';
+    const meta=document.createElement('div');meta.className='meta';
+    meta.textContent=`jarak ${fmt(num(r.jarak)||0,1)} m · ${fmt(num(r.angle)||0,1)}° · ${fmt(num(r.water)||0,0)} ml · ${fmt(num(r.press_psi)||0,1)} psi · nose ${fmt(num(r.Ln)||0,1)} cm · ${r.N} sirip`;
+    li.append(nm,meta);
+    if(r.catatan){const c=document.createElement('div');c.className='meta';c.textContent=r.catatan;li.appendChild(c);}
+    const row=document.createElement('div');row.className='row';
+    const mk=(t,cls,fn)=>{const b=document.createElement('button');b.type='button';b.className='mini'+(cls?' '+cls:'');b.textContent=t;b.addEventListener('click',fn);row.appendChild(b);};
+    mk('Muat','',()=>{applyRow(r);setMsg(kind==='lib'?'#ldMsg':'#svMsg','Desain "'+(r.nama||'')+'" dimuat. Buka tab Simulasi untuk meluncurkan.','ok');});
+    if(kind==='lib')mk('Salin ke desain saya','',()=>{mine.push({...r,id:newId(),dibuat:new Date().toISOString()});persist();renderList();setMsg('#ldMsg','Disalin ke desain saya.','ok');});
+    else mk('Hapus','danger',()=>{if(!confirm('Hapus desain "'+(r.nama||'')+'"?'))return;mine=mine.filter(x=>x.id!==r.id);persist();renderList();setMsg('#svMsg','Desain dihapus.','ok');});
+    li.appendChild(row);ul.appendChild(li);
+  }
+}
+function renderList(){fillList($('#libList'),LIB,'lib');fillList($('#mineList'),mine,'mine');}
+function saveDesign(){
+  const name=$('#svName').value.trim();
+  if(!name){setMsg('#svMsg','Isi nama desain dulu.','warn');$('#svName').focus();return;}
+  const row=rowFromState(name,$('#svNote').value.trim());
+  const same=mine.find(d=>d.nama===name);
+  if(same)row.id=same.id;
+  mine=mine.filter(d=>d.id!==row.id);mine.push(row);
+  const ok=persist();renderList();
+  if(!ok)setMsg('#svMsg','Penyimpanan browser tidak tersedia. Desain hanya ada selama halaman terbuka; gunakan Ekspor (.json).','warn');
+  else setMsg('#svMsg',same?'Desain bernama sama diperbarui.':'Desain tersimpan di browser ini.','ok');
+}
+$('#svBtn').addEventListener('click',saveDesign);
+function download(text,name,type){
+  const blob=new Blob([text],{type});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+$('#exJson').addEventListener('click',()=>{
+  if(!mine.length){setMsg('#ioMsg','Belum ada desain saya untuk diekspor.','warn');return;}
+  download(JSON.stringify({format:'roket-air',versi:1,designs:mine},null,2),'desain-saya.json','application/json');
+  setMsg('#ioMsg','File desain-saya.json diunduh.','ok');
+});
+$('#exLib').addEventListener('click',()=>{
+  const all=[...LIB,...mine.map(r=>({...r,id:'lib-'+String(r.id).replace(/^u/,'')}))];
+  const seen=new Set(),out=all.filter(r=>!seen.has(r.id)&&seen.add(r.id));
+  const body=out.map(r=>'  '+JSON.stringify(r)).join(',\n');
+  download('// Database library desain roket air. Tambahkan objek baru ke array ini lalu commit.\nwindow.RA_LIBRARY = [\n'+body+'\n];\n','designs.js','text/javascript');
+  setMsg('#ioMsg','File designs.js diunduh. Ganti library/designs.js di repo dengan file ini.','ok');
+});
+$('#imJson').addEventListener('click',()=>$('#jsonFile').click());
+$('#jsonFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(f.size>2e6){setMsg('#ioMsg','File terlalu besar.','warn');return;}
+  try{
+    const j=JSON.parse(await f.text());
+    const arr=Array.isArray(j)?j:(j&&Array.isArray(j.designs)?j.designs:null);
+    if(!arr)throw new Error('bukan file desain roket air');
+    const ok=arr.slice(0,200).map(clean).filter(valid).map(r=>({...r,id:newId()}));
+    if(!ok.length)throw new Error('tidak ada desain yang valid');
+    mine=mine.concat(ok).slice(-200);persist();renderList();
+    setMsg('#ioMsg',ok.length+' desain diimpor ke desain saya.','ok');
+  }catch(err){setMsg('#ioMsg','Gagal mengimpor: '+err.message+'.','warn');}
+});
+
+// ---------- tabs
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
+  document.querySelectorAll('.panel').forEach(pn=>pn.classList.toggle('active',pn.id==='tab-'+b.dataset.tab));
+  window.scrollTo(0,0);requestAnimationFrame(()=>{if(pred)drawAll();});
+}));
+
+// ---------- init
+refreshColors();syncN();syncPresets();renderList();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{refreshColors();drawAll();});
+if('ResizeObserver' in window){const ro=new ResizeObserver(()=>{if(pred)drawAll();});ro.observe(stageCv);ro.observe(dCv);}
+else window.addEventListener('resize',()=>{if(pred)drawAll();});
+recompute();
+})();
+</script>
+</body>
+</html>
