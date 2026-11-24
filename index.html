@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulator Roket Air by Daris</title>
+<title>Simulator Roket Air</title>
 <style>
 :root{
   --display:"DIN Condensed","Bahnschrift","Roboto Condensed","Arial Narrow","Helvetica Neue",sans-serif;
@@ -110,6 +110,13 @@ fieldset.dest{border:1px solid var(--line);border-radius:8px;margin:10px 0;paddi
 fieldset.dest legend{padding:0 4px;color:var(--muted);font-size:13px}
 fieldset.dest label{display:flex;align-items:center;gap:8px;min-height:34px}
 .badge{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted);margin-left:6px}
+table.cmp{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+table.cmp th,table.cmp td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+table.cmp th:first-child,table.cmp td:first-child{text-align:left;color:var(--muted)}
+table.cmp th{font:700 14px var(--display)}
+.lg{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+#cmpCv{display:block;width:100%;height:170px;border:1px solid var(--line);border-radius:8px;margin-top:8px}
+#finPrev,#rocketPrev{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:8px;background:#fff;margin:6px 0}
 code{font:12px ui-monospace,Consolas,monospace}
 .cols2{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
 @media (max-width:959px){
@@ -133,13 +140,14 @@ code{font:12px ui-monospace,Consolas,monospace}
 <body>
 <div class="app">
   <header class="top">
-    <h1>Simulator Roket Air By Daris</h1>
+    <h1>Simulator Roket Air</h1>
+    <p>Dua botol Coca-Cola 1,5 L: satu botol penuh sebagai tabung tekan berisi air, satu botol dipotong setengah sebagai nosecone dengan pemberat plastisin.</p>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Bagian simulator">
     <button type="button" role="tab" data-tab="sim" aria-selected="true">Simulasi</button>
     <button type="button" role="tab" data-tab="design" aria-selected="false">Desain</button>
-    <button type="button" role="tab" data-tab="save" aria-selected="false">Library</button>
+    <button type="button" role="tab" data-tab="save" aria-selected="false">Simpan</button>
     <button type="button" role="tab" data-tab="more" aria-selected="false">Lanjutan</button>
   </nav>
 
@@ -177,6 +185,22 @@ code{font:12px ui-monospace,Consolas,monospace}
           <span class="chip ok" id="stabChip">–</span>
           <p class="info" id="info"></p>
           <ul class="warns" id="warns"></ul>
+        </section>
+
+        <section class="card" id="cmpCard">
+          <h3 style="margin-top:0">Bandingkan botol 1,5 L dan 1 L</h3>
+          <div class="tools">
+            <label class="grp">Air
+              <select id="cmpMode" style="width:auto">
+                <option value="ml">Volume sama (ml)</option>
+                <option value="frac">Isi sama (% botol)</option>
+              </select>
+            </label>
+            <button class="mini" id="cmpBtn" type="button">Bandingkan</button>
+          </div>
+          <canvas id="cmpCv" role="img" aria-label="Perbandingan lintasan dua ukuran botol"></canvas>
+          <div id="cmpTable"></div>
+          <p class="note" id="cmpNote">Semua parameter lain sama (sudut, tekanan, panjang nose, plastisin, ukuran sirip dalam cm). Hasil diperbarui otomatis saat Anda mengubah desain.</p>
         </section>
       </div>
 
@@ -216,11 +240,18 @@ code{font:12px ui-monospace,Consolas,monospace}
       </div>
       <div class="controls">
         <details class="sec" open>
+          <summary>Botol</summary>
+          <div class="body">
+            <h3 style="margin-top:0">Kapasitas botol soda</h3>
+            <div class="chips" id="segBottle" role="group" aria-label="Kapasitas botol"></div>
+            <p class="note">Dua botol ditumpuk: botol tekan di belakang (leher dan nozzle menghadap ke bawah) dan nosecone berupa ujung atas botol kedua (leher dan bahu menghadap ke depan), sehingga kedua ujung roket berbentuk seperti ujung botol.</p>
+          </div>
+        </details>
+        <details class="sec" open>
           <summary>Nosecone dan pemberat</summary>
           <div class="body">
             <div class="slot" data-k="Ln"></div>
             <div class="slot" data-k="mBal"></div>
-            <div class="slot" data-k="balPos"></div>
             <p class="legend">Titik merah: CP (pusat tekanan). Lingkaran hitam-putih: CG saat berisi air. Lingkaran kosong: CG setelah air habis. CG harus di depan CP.</p>
           </div>
         </details>
@@ -237,6 +268,19 @@ code{font:12px ui-monospace,Consolas,monospace}
             <div class="ctl"><div class="lab"><label for="mat">Bahan sirip</label></div><select id="mat"></select></div>
           </div>
         </details>
+        <details class="sec" open>
+          <summary>Ekspor gambar</summary>
+          <div class="body">
+            <h3 style="margin-top:0">Gambar ukuran sirip</h3>
+            <canvas id="finPrev" role="img" aria-label="Gambar teknis ukuran sirip"></canvas>
+            <label style="display:flex;gap:8px;align-items:center;margin:8px 0;font-size:14px"><input type="checkbox" id="fin11"> Skala 1:1 untuk template cetak (300 dpi)</label>
+            <button class="mini" id="finPng" type="button">Unduh PNG gambar sirip</button>
+            <h3>Gambar desain roket</h3>
+            <canvas id="rocketPrev" role="img" aria-label="Gambar desain roket lengkap dengan ukuran"></canvas>
+            <button class="mini" id="rocketPng" type="button">Unduh PNG gambar roket</button>
+            <p class="note">Gambar memakai latar putih agar mudah dicetak. Ukuran dalam cm, sudut dalam derajat.</p>
+          </div>
+        </details>
       </div>
     </div>
   </section>
@@ -245,45 +289,34 @@ code{font:12px ui-monospace,Consolas,monospace}
     <div class="cols2">
       <div>
         <details class="sec" open>
-          <summary>Simpan desain saya</summary>
+          <summary>Simpan desain</summary>
           <div class="body">
             <label class="field">Nama desain<input id="svName" type="text" maxlength="60" placeholder="Contoh: Nose 15 cm, fin swept"></label>
             <label class="field">Catatan (opsional)<textarea id="svNote" rows="2" maxlength="200"></textarea></label>
-            <button class="btn" id="svBtn" type="button">Simpan desain</button>
+            <button class="btn" id="svBtn" type="button">Save</button>
+            <div style="margin-top:8px"><button class="mini" id="svAs" type="button">Save in device</button></div>
             <p class="msg" id="svMsg" aria-live="polite"></p>
-            <p class="note">Desain saya tersimpan di browser ini dan hanya bisa dilihat, dimuat, dan dihapus oleh Anda. Yang disimpan: semua parameter desain dan peluncuran, plus jarak prediksi, tinggi maksimum, dan margin stabilitas saat disimpan.</p>
+            <p class="note">Save menyimpan di browser ini (hanya Anda yang bisa melihatnya). Save in device menyimpan file .json ke perangkat Anda: muncul jendela simpan file di browser yang mendukungnya, atau file diunduh. Yang disimpan: semua parameter desain dan peluncuran, plus jarak prediksi, tinggi maksimum, dan margin stabilitas saat disimpan.</p>
           </div>
         </details>
-        <details class="sec">
-          <summary>Pindahkan dan bagikan</summary>
+        <details class="sec" open>
+          <summary>Buka file</summary>
           <div class="body">
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="mini" id="exJson" type="button">Ekspor desain saya (.json)</button>
-              <button class="mini" id="imJson" type="button">Impor file (.json)</button>
-              <button class="mini" id="exLib" type="button">Ekspor sebagai library (designs.js)</button>
-            </div>
+            <button class="mini" id="opBtn" type="button">Buka file desain (.json)…</button>
             <input type="file" id="jsonFile" accept=".json,application/json" hidden>
-            <p class="msg" id="ioMsg" aria-live="polite"></p>
-            <p class="note">Ekspor dan impor .json untuk memindahkan desain antar perangkat. Ekspor sebagai library menghasilkan file <code>library/designs.js</code> baru (library bawaan ditambah desain Anda). Ganti file itu di repo lalu commit supaya desain muncul untuk semua pengunjung.</p>
+            <p class="msg" id="opMsg" aria-live="polite"></p>
+            <ul class="saved" id="fileList"></ul>
           </div>
         </details>
       </div>
-      <div>
-        <details class="sec" open>
-          <summary>Library (file database)</summary>
-          <div class="body">
-            <p class="note">Desain bersama dari file <code>library/designs.js</code>. Hanya bisa dimuat atau disalin ke desain saya.</p>
-            <p class="msg" id="ldMsg" aria-live="polite"></p>
-            <ul class="saved" id="libList"></ul>
-          </div>
-        </details>
-        <details class="sec" open>
-          <summary>Desain saya</summary>
-          <div class="body">
-            <ul class="saved" id="mineList"></ul>
-          </div>
-        </details>
-      </div>
+      <details class="sec" open>
+        <summary>Tersimpan di browser ini</summary>
+        <div class="body">
+          <p class="note">Hanya bisa dilihat, dimuat, dan dihapus oleh Anda di browser ini. Pindahkan ke perangkat lain lewat Save in device.</p>
+          <button class="mini" id="svAll" type="button">Save in device: semua desain di browser</button>
+          <ul class="saved" id="mineList"></ul>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -303,7 +336,7 @@ code{font:12px ui-monospace,Consolas,monospace}
         <summary>Asumsi model dan keselamatan</summary>
         <div class="body">
           <ul class="note">
-            <li>Botol 1,5 L: diameter 8,6 cm, panjang 31 cm, massa 42 g. Nosecone dimodelkan sebagai kerucut melengkung dari leher botol ke diameter penuh.</li>
+            <li>Botol 1,5 L: diameter 9,0 cm, panjang 31 cm, massa 42 g. Botol 1 L: diameter 8,5 cm, panjang 27 cm, massa 34 g (massa perkiraan). Nosecone adalah ujung atas botol kedua (leher dan bahu di depan), bentuknya sama dengan ujung bawah botol tekan.</li>
             <li>Udara mengembang adiabatik (γ = 1,4). Air keluar menurut Bernoulli (Cd nozzle 0,95). Sisa udara menyembur sebagai aliran tersedak atau subsonik.</li>
             <li>Stabilitas memakai metode Barrowman (CP) dan dinamika rotasi 2D, jadi roket yang tidak stabil akan berputar dan jaraknya jatuh. Tanpa angin, tanpa parasut.</li>
             <li>Hasil adalah perkiraan. Kalibrasi drag dengan data uji lapangan.</li>
@@ -311,26 +344,15 @@ code{font:12px ui-monospace,Consolas,monospace}
           </ul>
         </div>
       </details>
-      <details class="sec">
-        <summary>Menambah desain ke library</summary>
-        <div class="body">
-          <ol class="note">
-            <li>Simpan desain di tab Library, lalu klik Ekspor sebagai library (designs.js).</li>
-            <li>Ganti file <code>library/designs.js</code> di repo GitHub dengan file hasil ekspor, lalu commit.</li>
-            <li>Setelah GitHub Pages memperbarui halaman, desain muncul di Library untuk semua pengunjung.</li>
-          </ol>
-          <p class="note">Anda juga bisa menyunting <code>library/designs.js</code> langsung: setiap desain adalah satu objek di dalam array <code>window.RA_LIBRARY</code>.</p>
-        </div>
-      </details>
     </div>
   </section>
 </div>
 
-<script src="library/designs.js"></script>
 <script id="phys">
 const Phys=(()=>{
 'use strict';
-const C={g:9.81,rhoW:1000,rhoA:1.2,Patm:101325,R:287,gam:1.4,T0:300,Vb:1.5e-3,D:0.086,Lc:0.31,Ls:0.07,Lneck:0.02,dNeck:0.028,Cdn:0.95,mBottle:0.042,mJoint:0.008,mNosePerM:0.14,mCap:0.003};
+const C={g:9.81,rhoW:1000,rhoA:1.2,Patm:101325,R:287,gam:1.4,T0:300,Lneck:0.02,dNeck:0.028,Cdn:0.95,mBottle:0.042,mJoint:0.008,mNosePerM:0.14,mCap:0.003};
+const BOTTLES={'1.5':{name:'1,5 L',Vb:1.5e-3,D:0.090,Lc:0.31,Ls:0.07,m:0.042},'1':{name:'1 L',Vb:1.0e-3,D:0.085,Lc:0.27,Ls:0.06,m:0.034}};
 const MATS=[
  {id:'karton',name:'Karton tebal (1,5 mm)',t:0.0015,rho:700},
  {id:'plastik',name:'Plastik PP/PVC (2 mm)',t:0.002,rho:950},
@@ -339,28 +361,37 @@ const MATS=[
  {id:'foam',name:'Foam board (5 mm)',t:0.005,rho:150}
 ];
 function buildRocket(s){
-  const D=C.D,Rr=D/2,A=Math.PI*D*D/4;
-  const Ln=s.Ln/100,Lt=Ln+C.Lc;
+  const B=BOTTLES[s.bottle]||BOTTLES['1.5'];
+  const base=false; // nosecone = ujung atas botol (leher + bahu), sama seperti ujung bawah botol tekan
+  const D=B.D,Rr=D/2,A=Math.PI*D*D/4,Lc=B.Lc,Ls=B.Ls,rf=0.23*D,mk=B.m/0.042;
+  const Ln=s.Ln/100,Lt=Ln+Lc;
+  const neckL=Math.min(C.Lneck,0.3*Ln),shL=Math.min(Ls,Ln-neckL);
   const mat=MATS.find(m=>m.id===s.mat)||MATS[1];
   const Cr=s.Cr/100,Ct=s.Ct/100,sp=s.span/100,Xs=s.sweep/100,off=s.finOff/100,N=s.N;
-  const rTip=C.dNeck/2,xT0=Lt-C.Lneck-C.Ls,xT1=Lt-C.Lneck;
+  const rTip=base?Rr-rf:C.dNeck/2,xT0=Lt-C.Lneck-Ls,xT1=Lt-C.Lneck,rNeck=C.dNeck/2;
   const rAt=x=>{
     if(x<=0)return rTip;
-    if(x<=Ln){const u=x/Ln;return rTip+(Rr-rTip)*(2*u-u*u);}
+    if(x<=neckL)return rNeck;
+    if(x<=neckL+shL){const u=(x-neckL)/shL,e=u*u*(3-2*u);return rNeck+(Rr-rNeck)*e;}
     if(x<=xT0)return Rr;
-    if(x<=xT1){const u=(x-xT0)/(xT1-xT0),e=u*u*(3-2*u);return Rr+(rTip-Rr)*e;}
-    return rTip;
+    if(x<=xT1){const u=(x-xT0)/(xT1-xT0),e=u*u*(3-2*u);return Rr+(rNeck-Rr)*e;}
+    return rNeck;
   };
   const Sf=(Cr+Ct)/2*sp,mFin=Sf*mat.t*mat.rho;
   const xLE=Lt-off-Cr;
   const cgFin=(Xs*(Cr+2*Ct)+(Cr*Cr+Cr*Ct+Ct*Ct))/(3*(Cr+Ct));
   const rMid=rAt(xLE+Cr/2);
+  // plastisin dipadatkan dari ujung nose (posisi 0%)
+  let balEnd=0,xb=0;
+  {const vol=s.mBal/1000/1600;let acc=0,mom=0,x=0;const dx=0.0005;
+   while(acc<vol&&x<Ln){const a=Math.PI*Math.pow(rAt(x+dx/2),2)*dx,take=Math.min(a,vol-acc);mom+=take*(x+dx/2);acc+=take;x+=dx;}
+   balEnd=x;xb=acc>0?mom/acc:0;}
   // dry mass components [m, x, L]
   const comps=[
-    [C.mNosePerM*Ln+C.mCap,0.55*Ln,Ln],
-    [s.mBal/1000,(s.balPos/100)*Ln,0],
+    [(C.mNosePerM*Ln+C.mCap)*mk,0.55*Ln,Ln],
+    [s.mBal/1000,xb,0],
     [C.mJoint,Ln,0.02],
-    [C.mBottle,Ln+C.Lc*0.5,C.Lc],
+    [B.m,Ln+Lc*0.5,Lc],
     [N*mFin,xLE+cgFin,Cr]
   ];
   let m0=0,S1=0,S2=0;
@@ -372,13 +403,13 @@ function buildRocket(s){
   const CNf=Kf*4*Neff*Math.pow(sp/D,2)/(1+Math.sqrt(1+Math.pow(2*Lm/(Cr+Ct),2)));
   const xf=xLE+Xs*(Cr+2*Ct)/(3*(Cr+Ct))+(1/6)*((Cr+Ct)-Cr*Ct/(Cr+Ct));
   const r=C.dNeck/D;
-  const CNn=2*(1-r*r),xn=Ln/3*(1+1/(1+r));
-  const CNt=-CNn,xt=xT0+C.Ls/3*(1+r/(1+r));
+  const CNn=2*(1-r*r),xn=neckL+shL/3*(1+1/(1+r));
+  const CNt=2*(r*r-1),xt=xT0+Ls/3*(1+r/(1+r));
   const ae=[[CNn,xn],[CNt,xt],[CNf,xf]];
   let Sa0=0,Sa1=0,Sb0=0,Sb1=0,Sb2=0;
   for(const [cn,x] of ae){Sa0+=cn;Sa1+=cn*x;const a=Math.abs(cn);Sb0+=a;Sb1+=a*x;Sb2+=a*x*x;}
   // drag
-  const cdBase=0.18,cdNose=0.45*Math.exp(-0.9*Ln/D)+0.05;
+  const cdBase=0.18,cdNose=0.45*Math.exp(-0.9*shL/D)+0.05;
   const cdFric=0.008*(Math.PI*D*Lt*0.8)/A;
   const cdFinF=0.0065*2*N*Sf/A;
   const cdFinLE=0.5*N*mat.t*sp/A;
@@ -386,23 +417,23 @@ function buildRocket(s){
   const cd90=1.2*Lt*D/A;
   return {Ln,Ltot:Lt,D,A,Rr,rAt,rMid,N,span:sp,Cr,Ct,Xs,xLE,Sf,mFin,m0,S1,S2,Sa0,Sa1,Sb0,Sb1,Sb2,
     xcp:Sa0>0.01?Sa1/Sa0:Lt,cd0,cd90,dn:s.dn/1000,rail:s.rail/100,h0:s.h0,
-    mBal:s.mBal/1000,balPos:s.balPos/100,rTip};
+    mBal:s.mBal/1000,balEnd,rTip,Vb:B.Vb,Lc,bottle:s.bottle||'1.5',noseType:'cone',bname:B.name};
 }
-function cgAt(R,Vw){const mw=C.rhoW*Vw,M=R.m0+mw,hw=Vw/C.Vb*C.Lc,xw=R.Ltot-hw/2;return (R.S1+mw*xw)/M;}
+function cgAt(R,Vw){const mw=C.rhoW*Vw,M=R.m0+mw,hw=Vw/R.Vb*R.Lc,xw=R.Ltot-hw/2;return (R.S1+mw*xw)/M;}
 function margin(R,waterMl){
-  const Vw=Math.min(Math.max(waterMl,0)*1e-6,C.Vb*0.96);
-  return R.Sa0>0.2?(R.Sa1/R.Sa0-cgAt(R,Vw))/C.D:-9;
+  const Vw=Math.min(Math.max(waterMl,0)*1e-6,R.Vb*0.96);
+  return R.Sa0>0.2?(R.Sa1/R.Sa0-cgAt(R,Vw))/R.D:-9;
 }
 function simulate(R,angDeg,waterMl,pBar,rec){
   const th0=angDeg*Math.PI/180,c0=Math.cos(th0),s0=Math.sin(th0);
-  let Vw=Math.min(Math.max(waterMl,0)*1e-6,C.Vb*0.96);if(Vw<1e-9)Vw=0;
-  const Va0=C.Vb-Vw,P0=C.Patm+pBar*1e5;
+  let Vw=Math.min(Math.max(waterMl,0)*1e-6,R.Vb*0.96);if(Vw<1e-9)Vw=0;
+  const Va0=R.Vb-Vw,P0=C.Patm+pBar*1e5;
   const An=Math.PI*R.dn*R.dn/4;
   const ma0=P0*Va0/(C.R*C.T0);
-  const Pend=P0*Math.pow(Va0/C.Vb,C.gam);
+  const Pend=P0*Math.pow(Va0/R.Vb,C.gam);
   let ma=ma0,phase=Vw>0?0:1;
   if(phase===1&&Pend<=C.Patm*1.002)phase=2;
-  const mw0=C.rhoW*Vw,M0=R.m0+mw0,hw0=Vw/C.Vb*C.Lc,xw0=R.Ltot-hw0/2;
+  const mw0=C.rhoW*Vw,M0=R.m0+mw0,hw0=Vw/R.Vb*R.Lc,xw0=R.Ltot-hw0/2;
   const xcg0=(R.S1+mw0*xw0)/M0,dcg=R.Ltot-xcg0;
   let x=dcg*c0,y=R.h0+dcg*s0,vx=0,vy=0,th=th0,om=0,t=0;
   let onRail=R.rail>0.002,v=0,s=0;
@@ -410,19 +441,19 @@ function simulate(R,angDeg,waterMl,pBar,rec){
   let minX=x,maxX=x,landed=false,noLift=false,xland=x,tland=0,waterLeft=0;
   let TT,XX,YY,TH,PH,VE,VX,VY,WF;
   if(rec){TT=[];XX=[];YY=[];TH=[];PH=[];VE=[];VX=[];VY=[];WF=[];}
-  const push=(ve,ph)=>{TT.push(t);XX.push(x);YY.push(y);TH.push(th);PH.push(ph);VE.push(ve);VX.push(vx);VY.push(vy);WF.push(Vw/C.Vb);};
+  const push=(ve,ph)=>{TT.push(t);XX.push(x);YY.push(y);TH.push(th);PH.push(ph);VE.push(ve);VX.push(vx);VY.push(vy);WF.push(Vw/R.Vb);};
   while(t<40&&steps++<400000){
-    const mw=C.rhoW*Vw,M=R.m0+mw,hw=Vw/C.Vb*C.Lc,xw=R.Ltot-hw/2;
+    const mw=C.rhoW*Vw,M=R.m0+mw,hw=Vw/R.Vb*R.Lc,xw=R.Ltot-hw/2;
     const xcg=(R.S1+mw*xw)/M;
     let T=0,mdot=0,ve=0;
     if(phase===0){
-      const P=P0*Math.pow(Va0/(C.Vb-Vw),C.gam),dP=P-C.Patm;
+      const P=P0*Math.pow(Va0/(R.Vb-Vw),C.gam),dP=P-C.Patm;
       if(dP>0){ve=Math.sqrt(2*dP/C.rhoW);mdot=C.rhoW*C.Cdn*An*ve;T=mdot*ve;}else{phase=2;waterLeft=Vw;}
     }else if(phase===1){
       const Pa=Pend*Math.pow(ma/ma0,C.gam);
       if(Pa<=C.Patm*1.002||ma<=0)phase=2;
       else{
-        const Ta=Pa*C.Vb/(ma*C.R),pr=Pa/C.Patm;
+        const Ta=Pa*R.Vb/(ma*C.R),pr=Pa/C.Patm;
         if(pr>1.8929){
           const Te=Ta*2/(C.gam+1),Pe=Pa*0.5283,vv=Math.sqrt(C.gam*C.R*Te),rhoe=Pe/(C.R*Te);
           mdot=C.Cdn*An*rhoe*vv;ve=vv;T=mdot*vv+(Pe-C.Patm)*An;
@@ -539,7 +570,7 @@ function solve(R,target,cur,lock,lim){
   }
   return {ok:true,vals:best.v,evals};
 }
-return {C,MATS,buildRocket,cgAt,margin,simulate,solve};
+return {C,MATS,BOTTLES,buildRocket,cgAt,margin,simulate,solve};
 })();
 </script>
 
@@ -547,10 +578,10 @@ return {C,MATS,buildRocket,cgAt,margin,simulate,solve};
 (()=>{
 'use strict';
 const $=(s,e=document)=>e.querySelector(s);
-const {C,MATS,buildRocket,simulate,margin,solve}=Phys;
+const {C,MATS,BOTTLES,buildRocket,simulate,margin,solve}=Phys;
 const fmt=(v,d=1)=>Number(v).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d});
 
-const S={angle:45,water:500,press:70,Ln:15,mBal:100,balPos:12,N:4,Cr:12,Ct:5,span:12,sweep:7,finOff:8,mat:'karton',
+const S={bottle:'1.5',noseType:'cone',angle:45,water:500,press:70,Ln:15,mBal:100,balPos:0,N:4,Cr:12,Ct:5,span:12,sweep:7,finOff:8,mat:'karton',
   dn:22,rail:30,h0:0.5,kD:1,target:30,speed:1,slow:true};
 const CFG={
   angle:{label:'Sudut elevasi',min:10,max:90,step:0.1,unit:'°',dec:1},
@@ -633,6 +664,23 @@ segSpeed.addEventListener('click',e=>{
 });
 $('#slow').addEventListener('change',e=>{S.slow=e.target.checked;});
 
+// bottle / nose chips
+function applyBottleLimits(){
+  const mx=Math.round(BOTTLES[S.bottle].Vb*1e6*0.87);CFG.water.max=mx;
+  refs.water.r.max=mx;refs.water.n.max=mx;
+  if(S.water>mx)setVal('water',mx);
+}
+function chipRow(id,items,key,after){
+  const box=$(id);
+  items.forEach(([v,t])=>{
+    const b=document.createElement('button');b.type='button';b.textContent=t;b.dataset.v=v;
+    b.addEventListener('click',()=>{S[key]=v;sync();after&&after();schedule();});box.appendChild(b);
+  });
+  function sync(){[...box.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S[key])));}
+  sync();return sync;
+}
+const syncBottle=chipRow('#segBottle',[['1.5','1,5 L (Ø 9,0 cm)'],['1','1 L (Ø 8,5 cm)']],'bottle',applyBottleLimits);
+
 // ---------- canvas helpers
 const stageCv=$('#stage'),sctx=stageCv.getContext('2d');
 const dCv=$('#design'),dctx=dCv.getContext('2d');
@@ -657,7 +705,7 @@ function niceStep(scale,minPx){
 function drawRocket(c,R,o){
   const ca=Math.cos(o.ang),sa=Math.sin(o.ang),ppm=o.ppm,xr=o.xref;
   const P=(x,r)=>{const u=(xr-x)*ppm,v=r*ppm;return [o.ox+u*ca-v*sa,o.oy-(u*sa+v*ca)];};
-  const Lt=R.Ltot,N=70;
+  const Lt=R.Ltot,N=160;
   const body=()=>{
     c.beginPath();
     for(let i=0;i<=N;i++){const x=Lt*i/N,p=P(x,R.rAt(x));i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]);}
@@ -668,19 +716,14 @@ function drawRocket(c,R,o){
     c.beginPath();let p=P(x0,-r);c.moveTo(p[0],p[1]);
     p=P(x0,r);c.lineTo(p[0],p[1]);p=P(x1,r);c.lineTo(p[0],p[1]);p=P(x1,-r);c.lineTo(p[0],p[1]);c.closePath();
   };
-  const lw=Math.max(1,Math.min(1.6,ppm*0.004));
+  const lw=o.lw||Math.max(1,Math.min(1.6,ppm*0.004));
   // fins behind body translucency: draw body first
   body();c.fillStyle=col['--pet'];c.fill();
   c.save();body();c.clip();
-  if(o.waterFrac>0){band(Lt-o.waterFrac*C.Lc,Lt,1);c.fillStyle=col['--water'];c.fill();}
-  if(R.mBal>0){
-    const V=R.mBal/1600,xc=R.balPos*R.Ln,rl=Math.max(0.012,R.rAt(clamp(xc,0.01,R.Ln)));
-    const Lb=Math.min(R.Ln*0.95,V/(Math.PI*rl*rl));
-    const x0=clamp(xc-Lb/2,0,Math.max(0,R.Ln-Lb));
-    band(x0,x0+Lb,1);c.fillStyle='#c8333b';c.fill();
-  }
+  if(o.waterFrac>0){band(Lt-o.waterFrac*R.Lc,Lt,1);c.fillStyle=col['--water'];c.fill();}
+  if(R.mBal>0&&R.balEnd>0){band(0,R.balEnd,1);c.fillStyle='#c8333b';c.fill();}
   c.restore();
-  band(0,0.018,R.rTip+0.002);c.fillStyle=col['--green'];c.fill();
+  if(R.noseType!=='base'){band(0,0.018,R.rTip+0.002);c.fillStyle=col['--green'];c.fill();}
   body();c.strokeStyle=col['--ink'];c.lineWidth=lw;c.stroke();
   // joint tape
   {const a=P(R.Ln,-R.Rr),b=P(R.Ln,R.Rr);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.globalAlpha=.55;c.stroke();c.globalAlpha=1;}
@@ -702,7 +745,7 @@ let R=null,pred=null,anim={on:false,finished:false,t:0,fi:0,last:0},parts=[];
 function recompute(){
   R=buildRocket(S);
   pred=simulate(R,S.angle,S.water,S.press/PSI,true);
-  updateReadouts();drawAll();
+  updateReadouts();if(cmp)runCompare();drawAll();
 }
 let pending=false;
 function schedule(){stopAnim();if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;recompute();});}
@@ -726,7 +769,7 @@ function updateReadouts(){
   chip.className='chip '+cls;chip.textContent=txt;
   document.querySelectorAll('.sumChip').forEach(e=>{e.className='chip '+cls+' sumChip';e.textContent=txt;});
   document.querySelectorAll('.sumRange').forEach(e=>{e.textContent='Jarak prediksi '+fmt(p.range,1)+' m';});
-  $('#info').textContent=`Massa awal ${fmt((R.m0+C.rhoW*Math.min(S.water*1e-6,C.Vb*.96))*1000,0)} g, massa kosong ${fmt(R.m0*1000,0)} g, panjang ${fmt(R.Ltot*100,0)} cm, Cd ${fmt(R.cd0,2)}. Margin stabilitas ${fmt(mL,1)} cal saat meluncur, ${fmt(mB,1)} cal setelah air habis.`;
+  $('#info').textContent=`Botol ${R.bname}, nose ujung botol (dua botol). Massa awal ${fmt((R.m0+C.rhoW*Math.min(S.water*1e-6,R.Vb*.96))*1000,0)} g, massa kosong ${fmt(R.m0*1000,0)} g, panjang ${fmt(R.Ltot*100,0)} cm, Cd ${fmt(R.cd0,2)}. Margin stabilitas ${fmt(mL,1)} cal saat meluncur, ${fmt(mB,1)} cal setelah air habis.`;
   const w=[];
   if(S.press>=100)w.push(['Tekanan 100 psi atau lebih: botol PET bisa pecah. Uji hidrostatik dulu, pakai pelindung mata, dan luncurkan dari jauh.','bad']);
   if(p.noLift)w.push(['Roket tidak lepas dari rel. Naikkan tekanan atau air, atau kurangi plastisin.','bad']);
@@ -766,7 +809,7 @@ function drawStage(dts){
 
   const live=anim.on||anim.finished;
   // pose
-  let px,py,pth,pph=2,pve=0,pvx=0,pvy=0,pwf=S.water*1e-6/C.Vb;
+  let px,py,pth,pph=2,pve=0,pvx=0,pvy=0,pwf=S.water*1e-6/R.Vb;
   if(live&&d.T.length>1){
     const i=anim.fi,t0=d.T[i],t1=d.T[i+1],a=t1>t0?clamp((anim.t-t0)/(t1-t0),0,1):1,L_=(u,v)=>u+(v-u)*a;
     px=L_(d.X[i],d.X[i+1]);py=L_(d.Y[i],d.Y[i+1]);pth=L_(d.TH[i],d.TH[i+1]);
@@ -839,10 +882,10 @@ function drawDesign(){
   const maxr=Math.max(R.Rr,R.rMid+R.span);
   const ppm=Math.min((w-30-100)/R.Ltot,(h/2-40)/maxr,900);
   const ox=16,oy=h/2-6;
-  drawRocket(c,R,{ox,oy,ang:0,ppm,xref:R.Ltot,waterFrac:S.water*1e-6/C.Vb});
+  drawRocket(c,R,{ox,oy,ang:0,ppm,xref:R.Ltot,waterFrac:S.water*1e-6/R.Vb});
   const X=x=>ox+(R.Ltot-x)*ppm;
   // CG dry, CG wet, CP
-  const cgW=Phys.cgAt(R,Math.min(S.water*1e-6,C.Vb*.96)),cgD=Phys.cgAt(R,0);
+  const cgW=Phys.cgAt(R,Math.min(S.water*1e-6,R.Vb*.96)),cgD=Phys.cgAt(R,0);
   c.font='600 11px system-ui,sans-serif';c.textAlign='center';
   c.strokeStyle=col['--ink'];c.lineWidth=1.5;
   c.beginPath();c.arc(X(cgD),oy,4.5,0,7);c.fillStyle=col['--panel'];c.fill();c.stroke();
@@ -878,7 +921,247 @@ function drawDesign(){
   }
   c.fillStyle=col['--ink'];c.font='11px system-ui,sans-serif';c.textAlign='center';c.fillText('tampak belakang',cx,cy+50);
 }
-function drawAll(){drawStage(0);drawDesign();}
+function drawAll(){drawStage(0);drawDesign();drawCmp();drawExports();}
+
+// ---------- perbandingan botol
+let cmp=null;
+function waterFor(b,mode){
+  const mx=Math.round(BOTTLES[b].Vb*1e6*0.87);
+  if(mode==='frac')return Math.min(mx,Math.round(S.water*1e-6/R.Vb*BOTTLES[b].Vb*1e6));
+  return Math.min(mx,Math.round(S.water));
+}
+function runCompare(){
+  const mode=$('#cmpMode').value;
+  cmp=['1.5','1'].map(b=>{
+    const s2={...S,bottle:b,water:waterFor(b,mode)};
+    const Rb=buildRocket(s2),r=simulate(Rb,S.angle,s2.water,S.press/PSI,true);
+    return {b,name:BOTTLES[b].name,w:s2.water,Rb,r,m:margin(Rb,s2.water)};
+  });
+  const rows=[
+    ['Volume air',x=>fmt(x.w,0)+' ml'],
+    ['Massa awal',x=>fmt((x.Rb.m0+C.rhoW*x.w*1e-6)*1000,0)+' g'],
+    ['Jarak',x=>fmt(x.r.range,1)+' m'],
+    ['Tinggi maks',x=>fmt(x.r.apogee,1)+' m'],
+    ['Waktu terbang',x=>fmt(x.r.tFlight,2)+' s'],
+    ['Kecepatan maks',x=>fmt(x.r.vmax,1)+' m/s'],
+    ['Percepatan maks',x=>fmt(x.r.gmax,0)+' g'],
+    ['Lama dorongan',x=>fmt(x.r.tBurn*1000,0)+' ms'],
+    ['Margin stabilitas',x=>fmt(x.m,1)+' cal'+(x.r.tumbled?' (berputar)':'')]
+  ];
+  const t=document.createElement('table');t.className='cmp';
+  const hd=t.createTHead().insertRow();['','1,5 L','1 L'].forEach(x=>{const th=document.createElement('th');th.textContent=x;hd.appendChild(th);});
+  const tb=t.createTBody();
+  rows.forEach(([n,f])=>{const tr=tb.insertRow();[n,f(cmp[0]),f(cmp[1])].forEach(x=>{tr.insertCell().textContent=x;});});
+  const d=cmp[1].r.range-cmp[0].r.range;
+  const box=$('#cmpTable');box.innerHTML='';box.appendChild(t);
+  $('#cmpNote').textContent=`Selisih jarak: botol 1 L ${d>=0?'lebih jauh':'lebih dekat'} ${fmt(Math.abs(d),1)} m (${fmt(Math.abs(d)/Math.max(cmp[0].r.range,0.01)*100,0)}%) dibanding 1,5 L. Parameter lain sama (sudut, tekanan, panjang nose, plastisin, sirip dalam cm). Hasil diperbarui otomatis saat desain diubah.`;
+  drawCmp();
+}
+function drawCmp(){
+  const cv=$('#cmpCv'),{w,h,dpr}=sizeCanvas(cv);if(w<20||!cmp)return;
+  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);
+  const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,col['--sky1']);g.addColorStop(1,col['--sky2']);c.fillStyle=g;c.fillRect(0,0,w,h);
+  const gy=h-20,top=26,L=12,Rm=14;
+  const xmax=Math.max(3,...cmp.map(k=>k.r.maxX)),ymax=Math.max(1.5,...cmp.map(k=>k.r.maxY));
+  const sc=Math.min((w-L-Rm)/(xmax*1.04),(gy-top)/(ymax*1.12));
+  const sx=x=>L+x*sc,sy=y=>gy-y*sc;
+  c.fillStyle=col['--ground'];c.fillRect(0,gy,w,h-gy);c.strokeStyle=col['--groundline'];c.lineWidth=2;c.beginPath();c.moveTo(0,gy);c.lineTo(w,gy);c.stroke();
+  const st=niceStep(sc,48);c.font='11px system-ui,sans-serif';c.fillStyle=col['--muted'];c.textAlign='center';
+  for(let xv=0;sx(xv)<w-10;xv+=st)c.fillText(fmt(xv,st<1?1:0)+' m',sx(xv),gy+14);
+  const cols=[col['--red'],'#2f8fe0'];
+  cmp.forEach((k,i)=>{
+    c.strokeStyle=cols[i];c.lineWidth=2.5;c.beginPath();
+    k.r.X.forEach((x,j)=>{const X=sx(x),Y=sy(k.r.Y[j]);j?c.lineTo(X,Y):c.moveTo(X,Y);});c.stroke();
+    const fx=sx(k.r.range);c.fillStyle=cols[i];c.beginPath();c.arc(fx,gy,4,0,7);c.fill();
+    c.font='700 12px system-ui,sans-serif';c.textAlign=fx>w-40?'right':'center';c.fillText(fmt(k.r.range,1)+' m',fx,gy-8-i*13);
+    c.textAlign='left';c.fillRect(10+i*70,8,10,10);c.fillStyle=col['--ink'];c.font='12px system-ui,sans-serif';c.fillText(k.name,24+i*70,17);
+  });
+}
+$('#cmpBtn').addEventListener('click',runCompare);
+$('#cmpMode').addEventListener('change',runCompare);
+
+// ---------- ekspor gambar (PNG)
+const LIGHT={'--ink':'#15212b','--pet':'rgba(110,170,215,.30)','--water':'rgba(40,140,225,.78)','--yellow':'#f2c200','--green':'#2b9a4e','--panel':'#ffffff','--red':'#d3202b','--muted':'#53636f','--line':'#d0d9e0'};
+function withLight(fn){const bak={};for(const k in LIGHT){bak[k]=col[k];col[k]=LIGHT[k];}try{return fn();}finally{for(const k in bak)col[k]=bak[k];}}
+const f1=v=>fmt(v,1);
+function mkTools(c){
+  const INK='#15212b',MUT='#53636f';
+  const line=(x1,y1,x2,y2,dash)=>{c.beginPath();c.setLineDash(dash||[]);c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();c.setLineDash([]);};
+  const arrow=(x,y,dx,dy)=>{const n=Math.hypot(dx,dy)||1;dx/=n;dy/=n;const L=16,w=6;c.beginPath();c.moveTo(x,y);c.lineTo(x-dx*L+dy*w,y-dy*L-dx*w);c.lineTo(x-dx*L-dy*w,y-dy*L+dx*w);c.closePath();c.fill();};
+  const text=(t,x,y,al,size,color,bold)=>{c.font=(bold?'700 ':'500 ')+(size||26)+'px system-ui,Arial,sans-serif';c.fillStyle=color||INK;c.textAlign=al||'center';c.fillText(t,x,y);};
+  const dimH=(xa,xb,y,label,ext)=>{
+    c.strokeStyle=MUT;c.lineWidth=1.5;
+    line(xa,ext[0],xa,y+(y>ext[0]?12:-12),[6,5]);line(xb,ext[1],xb,y+(y>ext[1]?12:-12),[6,5]);
+    c.strokeStyle=INK;c.fillStyle=INK;c.lineWidth=2.2;line(xa,y,xb,y);
+    arrow(xa,y,xa-xb,0);arrow(xb,y,xb-xa,0);
+    text(label,(xa+xb)/2,y-14,'center',26,INK,true);
+  };
+  const dimV=(x,ya,yb,label,ext)=>{
+    c.strokeStyle=MUT;c.lineWidth=1.5;
+    line(ext[0],ya,x+(x>ext[0]?12:-12),ya,[6,5]);line(ext[1],yb,x+(x>ext[1]?12:-12),yb,[6,5]);
+    c.strokeStyle=INK;c.fillStyle=INK;c.lineWidth=2.2;line(x,ya,x,yb);
+    arrow(x,ya,0,ya-yb);arrow(x,yb,0,yb-ya);
+    c.save();c.translate(x-14,(ya+yb)/2);c.rotate(-Math.PI/2);text(label,0,0,'center',26,INK,true);c.restore();
+  };
+  return {line,arrow,text,dimH,dimV,INK,MUT};
+}
+function angAt(P,Q,Rp){
+  const ux=P[0]-Q[0],uy=P[1]-Q[1],vx=Rp[0]-Q[0],vy=Rp[1]-Q[1];
+  return Math.acos(Math.max(-1,Math.min(1,(ux*vx+uy*vy)/(Math.hypot(ux,uy)*Math.hypot(vx,vy)))))*180/Math.PI;
+}
+function finSheet(full){
+  const cr=S.Cr,ct=S.Ct,sp=S.span,xs=S.sweep,N=S.N;
+  const mat=MATS.find(m=>m.id===S.mat)||MATS[1];
+  const minX=Math.min(0,xs),maxX=Math.max(cr,xs+ct),wcm=maxX-minX;
+  const ppm=full?300/2.54:Math.min(980/wcm,420/sp,90);
+  const dw=wcm*ppm,dh=sp*ppm;
+  const W=Math.max(1400,Math.round(dw+480));
+  const yTop=390,yb=yTop+dh,tableY=yb+200,H=Math.round(tableY+9*48+70);
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,W,H);
+  const T=mkTools(c),{INK,MUT}=T;
+  const x0=(W+(maxX+minX)*ppm)/2,X=x=>x0-x*ppm;
+  const A=[X(0),yb],B=[X(cr),yb],Cp=[X(xs+ct),yTop],D=[X(xs),yTop];
+  const tri=ct<0.01;
+  // judul
+  T.text('Gambar ukuran sirip',60,84,'left',48,INK,true);
+  T.text(`${N} sirip · ${mat.name} · ukuran dalam cm, sudut dalam derajat`,60,128,'left',26,MUT);
+  T.text('Sisi depan (leading edge) di kanan, mengarah ke nose roket.',60,164,'left',26,MUT);
+  // bentuk sirip
+  c.beginPath();c.moveTo(A[0],A[1]);c.lineTo(B[0],B[1]);c.lineTo(Cp[0],Cp[1]);if(!tri)c.lineTo(D[0],D[1]);c.closePath();
+  c.fillStyle='#fff3b0';c.fill();c.strokeStyle=INK;c.lineWidth=4;c.lineJoin='round';c.stroke();
+  // huruf sudut
+  T.text('A',A[0]+26,A[1]+8,'center',26,INK,true);T.text('B',B[0]-26,B[1]+8,'center',26,INK,true);
+  if(tri)T.text('C',Cp[0],Cp[1]-18,'center',26,INK,true);
+  else{T.text('C',Cp[0]-26,Cp[1]-10,'center',26,INK,true);T.text('D',D[0]+26,D[1]-10,'center',26,INK,true);}
+  // dimensi: root, tip, tinggi, sweep
+  T.dimH(B[0],A[0],yb+80,`Root ${f1(cr)} cm`,[yb,yb]);
+  if(!tri)T.dimH(Cp[0],D[0],yTop-60,`Tip ${f1(ct)} cm`,[yTop,yTop]);
+  const xl=Math.min(A[0],B[0],Cp[0],D[0])-80;
+  T.dimV(xl,yTop,yb,`Tinggi ${f1(sp)} cm`,[Math.min(Cp[0],D[0]),Math.min(A[0],B[0])]);
+  if(Math.abs(xs)>0.05){
+    const ySw=yTop-(tri?60:130);
+    const xa=Math.min(A[0],D[0]),xb=Math.max(A[0],D[0]);
+    T.dimH(xa,xb,ySw,`Sweep ${f1(xs)} cm`,xs>0?[yTop,yb]:[yb,yTop]);
+  }
+  // sudut kemiringan
+  const alpha=Math.atan2(xs,sp)*180/Math.PI,beta=Math.atan2(xs+ct-cr,sp)*180/Math.PI;
+  const arc=(P,Q,label,off)=>{
+    const r=Math.min(170,dh*0.5);
+    c.strokeStyle=MUT;c.lineWidth=1.5;T.line(P[0],P[1],P[0],P[1]-r-40,[8,6]);
+    const a0=-Math.PI/2,a1=Math.atan2(Q[1]-P[1],Q[0]-P[0]);
+    let diff=a1-a0;while(diff>Math.PI)diff-=2*Math.PI;while(diff<=-Math.PI)diff+=2*Math.PI;
+    c.strokeStyle='#c8333b';c.lineWidth=3;c.beginPath();c.arc(P[0],P[1],r,a0,a1,diff<0);c.stroke();
+    const am=a0+diff/2;
+    T.text(label,P[0]+Math.cos(am)*(r+off),P[1]+Math.sin(am)*(r+off)+8,'center',26,'#c8333b',true);
+  };
+  if(Math.abs(alpha)>0.05)arc(A,tri?Cp:D,`α ${f1(Math.abs(alpha))}°`,58);
+  if(Math.abs(beta)>0.05)arc(B,Cp,`β ${f1(Math.abs(beta))}°`,58);
+  // panjang sisi miring (di dalam bentuk, sejajar sisi)
+  const LE=Math.hypot(xs,sp),TE=Math.hypot(xs+ct-cr,sp);
+  const cen=tri?[(A[0]+B[0]+Cp[0])/3,(A[1]+B[1]+Cp[1])/3]:[(A[0]+B[0]+Cp[0]+D[0])/4,(A[1]+B[1]+Cp[1]+D[1])/4];
+  const sideIn=(P,Q,label)=>{
+    const mx=(P[0]+Q[0])/2,my=(P[1]+Q[1])/2,ux=Q[0]-P[0],uy=Q[1]-P[1],n=Math.hypot(ux,uy);
+    let nx=-uy/n,ny=ux/n;if((cen[0]-mx)*nx+(cen[1]-my)*ny<0){nx=-nx;ny=-ny;}
+    let a=Math.atan2(uy,ux);if(a>Math.PI/2||a<-Math.PI/2)a+=Math.PI;
+    const dot=Math.sin(a)*nx-Math.cos(a)*ny,off=dot>0?16:46;
+    c.save();c.translate(mx+nx*off,my+ny*off);c.rotate(a);T.text(label,0,0,'center',26,INK,true);c.restore();
+  };
+  sideIn(A,tri?Cp:D,`Sisi depan ${f1(LE)} cm`);
+  sideIn(B,Cp,`Sisi belakang ${f1(TE)} cm`);
+  // tabel
+  const Sf=(cr+ct)/2*sp,mFin=Sf*(mat.t*100)*(mat.rho/1000);
+  const Ap=[0,0],Bp=[cr,0],Cq=[xs+ct,sp],Dq=[xs,sp];
+  const ang=tri?`A ${f1(angAt(Bp,Ap,Cq))}°, B ${f1(angAt(Ap,Bp,Cq))}°, C ${f1(angAt(Bp,Cq,Ap))}°`:`A ${f1(angAt(Bp,Ap,Dq))}°, B ${f1(angAt(Ap,Bp,Cq))}°, C ${f1(angAt(Bp,Cq,Dq))}°, D ${f1(angAt(Cq,Dq,Ap))}°`;
+  const left=[
+    ['Jumlah sirip',`${N} buah`],['Bahan',mat.name],['Luas per sirip',`${f1(Sf)} cm²`],['Massa per sirip',`${f1(mFin)} g`],
+    ['Root / Tip / Tinggi',`${f1(cr)} / ${f1(ct)} / ${f1(sp)} cm`],['Sweep',`${f1(xs)} cm`],['Sirip dari ujung belakang',`${f1(S.finOff)} cm`],
+    ['Skala',full?'1:1 (cetak 100%)':'tidak berskala']
+  ];
+  const right=[
+    ['Sisi depan (LE)',`${f1(LE)} cm`],['α: sisi depan vs tegak lurus root',`${f1(Math.abs(alpha))}°`],['Sisi depan vs sumbu roket',`${f1(90-Math.abs(alpha))}°`],
+    ['Sisi belakang (TE)',`${f1(TE)} cm`],['β: sisi belakang vs tegak lurus root',`${f1(Math.abs(beta))}°`]
+  ];
+  c.strokeStyle='#d0d9e0';c.lineWidth=2;T.line(60,tableY-30,W-60,tableY-30);
+  left.forEach(([k,v],i)=>{T.text(k,60,tableY+i*48+10,'left',24,MUT);T.text(v,430,tableY+i*48+10,'left',25,INK,true);});
+  right.forEach(([k,v],i)=>{const x=W/2+60;T.text(k,x,tableY+i*48+10,'left',24,MUT);T.text(v,x+490,tableY+i*48+10,'left',26,INK,true);});
+  T.text('Sudut dalam',W/2+60,tableY+5*48+10,'left',24,MUT);T.text(ang,W/2+60,tableY+6*48+10,'left',26,INK,true);
+  return cv;
+}
+function rocketSheet(){
+  const Ltot=R.Ltot,maxr=Math.max(R.Rr,R.rMid+R.span),Rr=R.Rr;
+  const W=1600,ppm=Math.min((W-2*200)/Ltot,520/(2*maxr));
+  const topY=200,oy=topY+100+maxr*ppm,ox=(W-Ltot*ppm)/2-40;
+  const dimY1=oy+maxr*ppm+90,dimY2=dimY1+80,tableY=dimY2+110,H=Math.round(tableY+7*48+60);
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,W,H);
+  const T=mkTools(c),{INK,MUT}=T;
+  const X=x=>ox+(Ltot-x)*ppm;
+  const mat=MATS.find(m=>m.id===S.mat)||MATS[1];
+  T.text('Desain roket air',60,84,'left',48,INK,true);
+  T.text(`Dua botol soda ${R.bname} ditumpuk · ukuran dalam cm`,60,128,'left',26,MUT);
+  T.text('CP = titik merah · CG = lingkaran hitam-putih (berisi air), lingkaran kosong (air habis)',60,164,'left',24,MUT);
+  withLight(()=>drawRocket(c,R,{ox,oy,ang:0,ppm,xref:Ltot,waterFrac:S.water*1e-6/R.Vb,lw:3}));
+  // penanda CG dan CP
+  const cgW=Phys.cgAt(R,Math.min(S.water*1e-6,R.Vb*.96)),cgD=Phys.cgAt(R,0);
+  c.lineWidth=3;c.strokeStyle=INK;
+  c.beginPath();c.arc(X(cgD),oy,9,0,7);c.fillStyle='#fff';c.fill();c.stroke();
+  const wx=X(cgW);c.beginPath();c.arc(wx,oy,14,0,7);c.fillStyle='#fff';c.fill();c.stroke();c.fillStyle=INK;
+  c.beginPath();c.moveTo(wx,oy);c.arc(wx,oy,14,-Math.PI/2,0);c.closePath();c.fill();
+  c.beginPath();c.moveTo(wx,oy);c.arc(wx,oy,14,Math.PI/2,Math.PI);c.closePath();c.fill();
+  const cpx=X(R.xcp);c.beginPath();c.arc(cpx,oy,11,0,7);c.fillStyle='#d3202b';c.fill();c.strokeStyle='#fff';c.lineWidth=3;c.stroke();
+  T.text('CP',cpx,oy-26,'center',26,'#d3202b',true);T.text('CG',wx,oy+44,'center',26,INK,true);
+  // dimensi
+  const yb0=oy+Rr*ppm;
+  T.dimH(X(R.Ln),X(0),dimY1,`Nosecone ${f1(R.Ln*100)} cm`,[yb0,yb0]);
+  T.dimH(X(Ltot),X(R.Ln),dimY1,`Tabung tekan ${f1(R.Lc*100)} cm`,[yb0,yb0]);
+  T.dimH(X(Ltot),X(0),dimY2,`Panjang total ${f1(Ltot*100)} cm`,[yb0,yb0]);
+  const xd=X(0)+110;
+  T.dimV(xd,oy-Rr*ppm,oy+Rr*ppm,`Ø ${f1(R.D*100)} cm`,[X(R.Ln)+10,X(R.Ln)+10]);
+  const off=S.finOff/100;
+  if(off>0.001)T.dimH(X(Ltot),X(Ltot-off),oy-maxr*ppm-60,`${f1(S.finOff)} cm`,[oy-R.rAt(Ltot)*ppm,oy-R.rAt(Ltot-off)*ppm]);
+  T.text('jarak sirip dari ujung belakang',X(Ltot),oy-maxr*ppm-100,'left',22,MUT);
+  // tampak belakang
+  {const cx=W-190,cy=210,tipR=R.rMid+R.span,sc=110/Math.max(tipR,Rr);
+   c.strokeStyle=INK;c.lineWidth=2;c.setLineDash([6,5]);c.beginPath();c.arc(cx,cy,Rr*sc,0,7);c.stroke();c.setLineDash([]);
+   c.beginPath();c.arc(cx,cy,R.rMid*sc,0,7);c.stroke();
+   for(let k=0;k<R.N;k++){const a=-Math.PI/2+2*Math.PI*k/R.N,ca=Math.cos(a),sa=Math.sin(a),nx=-sa,ny=ca,r0=R.rMid*sc,r1=tipR*sc,wd=4;
+     c.beginPath();c.moveTo(cx+ca*r0+nx*wd,cy+sa*r0+ny*wd);c.lineTo(cx+ca*r1+nx*wd,cy+sa*r1+ny*wd);c.lineTo(cx+ca*r1-nx*wd,cy+sa*r1-ny*wd);c.lineTo(cx+ca*r0-nx*wd,cy+sa*r0-ny*wd);c.closePath();c.fillStyle='#f2c200';c.fill();c.stroke();}
+   T.text('tampak belakang',cx,cy+tipR*sc+40,'center',24,MUT);}
+  // tabel
+  const m0=R.m0*1000,mw=C.rhoW*Math.min(S.water*1e-6,R.Vb*.96)*1000;
+  const left=[
+    ['Botol',`${R.bname} (Ø ${f1(R.D*100)} cm)`],['Panjang total',`${f1(Ltot*100)} cm`],['Nosecone',`${f1(R.Ln*100)} cm`],
+    ['Plastisin',`${fmt(S.mBal,0)} g`],['Massa kosong',`${fmt(m0,0)} g`],['Massa saat meluncur',`${fmt(m0+mw,0)} g`],
+    ['Setelan peluncuran',`${fmt(S.water,0)} ml · ${f1(S.press)} psi · ${f1(S.angle)}°`]
+  ];
+  const right=[
+    ['Sirip',`${S.N} buah`],['Bahan sirip',mat.name],['Root / Tip / Tinggi',`${f1(S.Cr)} / ${f1(S.Ct)} / ${f1(S.span)} cm`],['Sweep',`${f1(S.sweep)} cm`],
+    ['Sirip dari ujung belakang',`${f1(S.finOff)} cm`],['Margin (awal / air habis)',`${fmt(margin(R,S.water),1)} / ${fmt(margin(R,0),1)} cal`],
+    ['Jarak prediksi',`${f1(pred.range)} m`]
+  ];
+  c.strokeStyle='#d0d9e0';c.lineWidth=2;T.line(60,tableY-34,W-60,tableY-34);
+  left.forEach(([k,v],i)=>{T.text(k,60,tableY+i*48+10,'left',24,MUT);T.text(v,400,tableY+i*48+10,'left',26,INK,true);});
+  right.forEach(([k,v],i)=>{T.text(k,830,tableY+i*48+10,'left',24,MUT);T.text(v,1190,tableY+i*48+10,'left',26,INK,true);});
+  return cv;
+}
+function drawPrev(cv,src){
+  if(cv.getBoundingClientRect().width<20)return;
+  const w=Math.min(src.width,900),h=Math.round(src.height*w/src.width);
+  cv.width=w;cv.height=h;cv.getContext('2d').drawImage(src,0,0,w,h);
+}
+function drawExports(){
+  if(!R||!pred)return;
+  drawPrev($('#finPrev'),finSheet($('#fin11').checked));
+  drawPrev($('#rocketPrev'),rocketSheet());
+}
+function savePng(cv,name){
+  cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);},'image/png');
+}
+$('#fin11').addEventListener('change',drawExports);
+$('#finPng').addEventListener('click',()=>{const full=$('#fin11').checked;savePng(finSheet(full),full?'ukuran-sirip-skala-1-1.png':'ukuran-sirip.png');});
+$('#rocketPng').addEventListener('click',()=>savePng(rocketSheet(),'desain-roket-air.png'));
+window.__ra={finSheet,rocketSheet};
 
 // ---------- animation
 function loop(now){
@@ -906,7 +1189,7 @@ $('#autoBtn').addEventListener('click',()=>{
     try{
       const lock={a:$('#lkA').checked,w:$('#lkW').checked,p:$('#lkP').checked};
       const R0=buildRocket(S);
-      const res=solve(R0,S.target,{a:S.angle,w:S.water,p:S.press/PSI},lock,{aMin:10,aMax:85,wMin:50,wMax:1300,pMin:1,pMax:7});
+      const res=solve(R0,S.target,{a:S.angle,w:S.water,p:S.press/PSI},lock,{aMin:10,aMax:85,wMin:50,wMax:CFG.water.max,pMin:1,pMax:7});
       const v=res.vals;
       setVal('angle',v.a);setVal('water',v.w);setVal('press',v.p*PSI);
       stopAnim();recompute();
@@ -923,9 +1206,9 @@ $('#autoBtn').addEventListener('click',()=>{
   },30);
 });
 
-// ---------- library (file) dan desain saya (browser)
-const FIELDS=['id','nama','catatan','dibuat','angle','water','press_psi','Ln','mBal','balPos','N','Cr','Ct','span','sweep','finOff','mat','dn','rail','h0','kD','jarak','tinggi','margin'];
-const TEXTF=['id','nama','catatan','dibuat','mat'];
+// ---------- Save as (file) dan desain di browser
+const FIELDS=['id','nama','catatan','dibuat','angle','water','press_psi','Ln','mBal','balPos','N','Cr','Ct','span','sweep','finOff','mat','dn','rail','h0','kD','jarak','tinggi','margin','nose','botol'];
+const TEXTF=['id','nama','catatan','dibuat','mat','nose','botol'];
 const LS={get(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}};
 const num=v=>parseFloat(String(v).replace(',','.'));
 function clean(o){
@@ -938,19 +1221,21 @@ function clean(o){
   return r;
 }
 const valid=r=>r&&isFinite(num(r.angle))&&isFinite(num(r.water))&&isFinite(num(r.Ln));
-const LIB=(Array.isArray(window.RA_LIBRARY)?window.RA_LIBRARY:[]).map(clean).filter(valid);
 let mine=LS.get('ra_mine',[]);if(!Array.isArray(mine))mine=[];mine=mine.map(clean).filter(valid);
+let fileItems=[];
 const newId=()=>'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const setMsg=(id,t,k)=>{const e=$(id);e.textContent=t;e.className='msg'+(k?' '+k:'');};
 const persist=()=>LS.set('ra_mine',mine);
 function rowFromState(name,note){
   return {id:newId(),nama:name,catatan:note,dibuat:new Date().toISOString(),
-    angle:S.angle,water:S.water,press_psi:S.press,Ln:S.Ln,mBal:S.mBal,balPos:S.balPos,N:S.N,Cr:S.Cr,Ct:S.Ct,span:S.span,sweep:S.sweep,
+    angle:S.angle,water:S.water,press_psi:S.press,Ln:S.Ln,mBal:S.mBal,balPos:0,N:S.N,Cr:S.Cr,Ct:S.Ct,span:S.span,sweep:S.sweep,
     finOff:S.finOff,mat:S.mat,dn:S.dn,rail:S.rail,h0:S.h0,kD:S.kD,
-    jarak:+pred.range.toFixed(2),tinggi:+pred.apogee.toFixed(2),margin:+margin(R,S.water).toFixed(2)};
+    jarak:+pred.range.toFixed(2),tinggi:+pred.apogee.toFixed(2),margin:+margin(R,S.water).toFixed(2),nose:S.noseType,botol:S.bottle};
 }
 function applyRow(r){
-  const map={angle:'angle',water:'water',press_psi:'press',Ln:'Ln',mBal:'mBal',balPos:'balPos',Cr:'Cr',Ct:'Ct',span:'span',sweep:'sweep',finOff:'finOff',dn:'dn',rail:'rail',h0:'h0',kD:'kD'};
+  S.bottle=String(r.botol)==='1'?'1':'1.5';S.noseType='cone';
+  syncBottle();applyBottleLimits();
+  const map={angle:'angle',water:'water',press_psi:'press',Ln:'Ln',mBal:'mBal',Cr:'Cr',Ct:'Ct',span:'span',sweep:'sweep',finOff:'finOff',dn:'dn',rail:'rail',h0:'h0',kD:'kD'};
   for(const [f,k] of Object.entries(map)){const v=num(r[f]);if(isFinite(v))setVal(k,v);}
   const n=parseInt(r.N,10);if([2,3,4,5,6,8].includes(n))S.N=n;
   if(MATS.some(m=>m.id===r.mat)){S.mat=r.mat;matSel.value=r.mat;}
@@ -958,25 +1243,28 @@ function applyRow(r){
 }
 function fillList(ul,items,kind){
   ul.innerHTML='';
-  if(!items.length){const li=document.createElement('li');li.className='meta';li.textContent=kind==='lib'?'Library masih kosong.':'Belum ada desain tersimpan.';ul.appendChild(li);return;}
+  if(!items.length){const li=document.createElement('li');li.className='meta';li.textContent=kind==='file'?'Belum ada file dibuka.':'Belum ada desain tersimpan.';ul.appendChild(li);return;}
   const list=[...items].sort((a,b)=>String(b.dibuat||'').localeCompare(String(a.dibuat||'')));
   for(const r of list){
     const li=document.createElement('li');
     const nm=document.createElement('div');nm.className='nm';nm.textContent=r.nama||'(tanpa nama)';
     const meta=document.createElement('div');meta.className='meta';
-    meta.textContent=`jarak ${fmt(num(r.jarak)||0,1)} m · ${fmt(num(r.angle)||0,1)}° · ${fmt(num(r.water)||0,0)} ml · ${fmt(num(r.press_psi)||0,1)} psi · nose ${fmt(num(r.Ln)||0,1)} cm · ${r.N} sirip`;
+    meta.textContent=`jarak ${fmt(num(r.jarak)||0,1)} m · ${fmt(num(r.angle)||0,1)}° · ${fmt(num(r.water)||0,0)} ml · ${fmt(num(r.press_psi)||0,1)} psi · nose ${fmt(num(r.Ln)||0,1)} cm · ${r.N} sirip · botol ${String(r.botol)==='1'?'1':'1,5'} L`;
     li.append(nm,meta);
     if(r.catatan){const c=document.createElement('div');c.className='meta';c.textContent=r.catatan;li.appendChild(c);}
     const row=document.createElement('div');row.className='row';
     const mk=(t,cls,fn)=>{const b=document.createElement('button');b.type='button';b.className='mini'+(cls?' '+cls:'');b.textContent=t;b.addEventListener('click',fn);row.appendChild(b);};
-    mk('Muat','',()=>{applyRow(r);setMsg(kind==='lib'?'#ldMsg':'#svMsg','Desain "'+(r.nama||'')+'" dimuat. Buka tab Simulasi untuk meluncurkan.','ok');});
-    if(kind==='lib')mk('Salin ke desain saya','',()=>{mine.push({...r,id:newId(),dibuat:new Date().toISOString()});persist();renderList();setMsg('#ldMsg','Disalin ke desain saya.','ok');});
-    else mk('Hapus','danger',()=>{if(!confirm('Hapus desain "'+(r.nama||'')+'"?'))return;mine=mine.filter(x=>x.id!==r.id);persist();renderList();setMsg('#svMsg','Desain dihapus.','ok');});
+    const msgId=kind==='file'?'#opMsg':'#svMsg';
+    mk('Muat','',()=>{applyRow(r);setMsg(msgId,'Desain "'+(r.nama||'')+'" dimuat. Buka tab Simulasi untuk meluncurkan.','ok');});
+    if(kind==='file'){
+      mk('Simpan ke browser','',()=>{mine.push({...r,id:newId()});persist();renderList();setMsg('#opMsg','Disimpan ke browser.','ok');});
+      mk('Singkirkan','',()=>{fileItems=fileItems.filter(x=>x!==r);renderList();});
+    }else mk('Hapus','danger',()=>{if(!confirm('Hapus desain "'+(r.nama||'')+'"?'))return;mine=mine.filter(x=>x.id!==r.id);persist();renderList();setMsg('#svMsg','Desain dihapus.','ok');});
     li.appendChild(row);ul.appendChild(li);
   }
 }
-function renderList(){fillList($('#libList'),LIB,'lib');fillList($('#mineList'),mine,'mine');}
-function saveDesign(){
+function renderList(){fillList($('#fileList'),fileItems,'file');fillList($('#mineList'),mine,'mine');}
+function saveToBrowser(){
   const name=$('#svName').value.trim();
   if(!name){setMsg('#svMsg','Isi nama desain dulu.','warn');$('#svName').focus();return;}
   const row=rowFromState(name,$('#svNote').value.trim());
@@ -984,40 +1272,52 @@ function saveDesign(){
   if(same)row.id=same.id;
   mine=mine.filter(d=>d.id!==row.id);mine.push(row);
   const ok=persist();renderList();
-  if(!ok)setMsg('#svMsg','Penyimpanan browser tidak tersedia. Desain hanya ada selama halaman terbuka; gunakan Ekspor (.json).','warn');
-  else setMsg('#svMsg',same?'Desain bernama sama diperbarui.':'Desain tersimpan di browser ini.','ok');
+  if(!ok)setMsg('#svMsg','Penyimpanan browser tidak tersedia. Gunakan Save in device untuk menyimpan ke file.','warn');
+  else setMsg('#svMsg',same?'Desain bernama sama diperbarui di browser.':'Desain tersimpan di browser ini.','ok');
 }
-$('#svBtn').addEventListener('click',saveDesign);
-function download(text,name,type){
-  const blob=new Blob([text],{type});
+$('#svBtn').addEventListener('click',saveToBrowser);
+function download(text,name){
+  const blob=new Blob([text],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
-$('#exJson').addEventListener('click',()=>{
-  if(!mine.length){setMsg('#ioMsg','Belum ada desain saya untuk diekspor.','warn');return;}
-  download(JSON.stringify({format:'roket-air',versi:1,designs:mine},null,2),'desain-saya.json','application/json');
-  setMsg('#ioMsg','File desain-saya.json diunduh.','ok');
+async function writeFile(text,fname){
+  if(window.showSaveFilePicker){
+    try{
+      const fh=await window.showSaveFilePicker({suggestedName:fname,types:[{description:'Desain roket air',accept:{'application/json':['.json']}}]});
+      const w=await fh.createWritable();await w.write(text);await w.close();return 'ok';
+    }catch(e){if(e&&e.name==='AbortError')return 'cancel';}
+  }
+  download(text,fname);return 'ok';
+}
+const pack=rows=>JSON.stringify({format:'roket-air',versi:1,designs:rows},null,2);
+$('#svAs').addEventListener('click',async()=>{
+  const name=$('#svName').value.trim();
+  if(!name){setMsg('#svMsg','Isi nama desain dulu.','warn');$('#svName').focus();return;}
+  const row=rowFromState(name,$('#svNote').value.trim());
+  const fname=(name.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||'desain')+'.json';
+  const res=await writeFile(pack([row]),fname);
+  if(res==='ok')setMsg('#svMsg','Desain disimpan ke perangkat sebagai file '+fname+'.','ok');
 });
-$('#exLib').addEventListener('click',()=>{
-  const all=[...LIB,...mine.map(r=>({...r,id:'lib-'+String(r.id).replace(/^u/,'')}))];
-  const seen=new Set(),out=all.filter(r=>!seen.has(r.id)&&seen.add(r.id));
-  const body=out.map(r=>'  '+JSON.stringify(r)).join(',\n');
-  download('// Database library desain roket air. Tambahkan objek baru ke array ini lalu commit.\nwindow.RA_LIBRARY = [\n'+body+'\n];\n','designs.js','text/javascript');
-  setMsg('#ioMsg','File designs.js diunduh. Ganti library/designs.js di repo dengan file ini.','ok');
+$('#svAll').addEventListener('click',async()=>{
+  if(!mine.length){setMsg('#svMsg','Belum ada desain di browser untuk disimpan.','warn');return;}
+  const res=await writeFile(pack(mine),'desain-roket-air.json');
+  if(res==='ok')setMsg('#svMsg','Semua desain disimpan ke perangkat sebagai file.','ok');
 });
-$('#imJson').addEventListener('click',()=>$('#jsonFile').click());
+$('#opBtn').addEventListener('click',()=>$('#jsonFile').click());
 $('#jsonFile').addEventListener('change',async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
-  if(f.size>2e6){setMsg('#ioMsg','File terlalu besar.','warn');return;}
+  if(f.size>2e6){setMsg('#opMsg','File terlalu besar.','warn');return;}
   try{
     const j=JSON.parse(await f.text());
     const arr=Array.isArray(j)?j:(j&&Array.isArray(j.designs)?j.designs:null);
     if(!arr)throw new Error('bukan file desain roket air');
     const ok=arr.slice(0,200).map(clean).filter(valid).map(r=>({...r,id:newId()}));
     if(!ok.length)throw new Error('tidak ada desain yang valid');
-    mine=mine.concat(ok).slice(-200);persist();renderList();
-    setMsg('#ioMsg',ok.length+' desain diimpor ke desain saya.','ok');
-  }catch(err){setMsg('#ioMsg','Gagal mengimpor: '+err.message+'.','warn');}
+    fileItems=ok;renderList();
+    if(ok.length===1){applyRow(ok[0]);setMsg('#opMsg','Desain "'+(ok[0].nama||'')+'" dimuat dari '+f.name+'. Buka tab Simulasi untuk meluncurkan.','ok');}
+    else setMsg('#opMsg',ok.length+' desain dibaca dari '+f.name+'. Pilih Muat pada desain yang diinginkan.','ok');
+  }catch(err){setMsg('#opMsg','Gagal membuka file: '+err.message+'.','warn');}
 });
 
 // ---------- tabs
